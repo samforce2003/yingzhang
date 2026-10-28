@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>打工人硬账 · 三个只算钱、只出文书的工具</title>
+<meta name="description" content="押金该退多少、投诉该找谁、被裁公司欠你几笔——三个纯前端工具，输入你的数字，出区间、出条文、出文书。不上传任何数据，断网可用。作者：林小黑。">
+<style>
+:root{
+  --paper:#f6f3ea;
+  --paper2:#efeada;
+  --ink:#1d1b18;
+  --ink2:#4a453d;
+  --line:#d8d0bd;
+  --red:#8c2f2f;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  line-height:1.75;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);background:var(--paper2)}
+.hd{padding:34px 0 26px}
+.kicker{font-size:12px;letter-spacing:.22em;color:var(--red);text-transform:uppercase;font-family:var(--mono)}
+h1{font-size:clamp(26px,6.2vw,40px);line-height:1.25;margin:10px 0 8px;letter-spacing:.01em;font-weight:700}
+.lede{font-size:clamp(15px,3.6vw,17px);color:var(--ink2);margin:0}
+.meta{margin-top:16px;font-size:12.5px;color:var(--ink2);font-family:var(--mono);line-height:2}
+.meta span{white-space:nowrap}
+.meta i{font-style:normal;color:var(--line);margin:0 8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:19px;margin:0 0 6px;letter-spacing:.02em}
+.sub{color:var(--ink2);font-size:14px;margin:0 0 22px}
+.card{
+  display:block;text-decoration:none;color:inherit;background:#fffdf7;
+  border:1px solid var(--line);border-left:3px solid var(--red);
+  padding:20px 22px;margin:0 0 16px;transition:border-color .15s,transform .15s;
+}
+.card:hover,.card:focus{border-color:var(--red);transform:translateY(-1px)}
+.card .no{font-family:var(--mono);font-size:12px;color:var(--red);letter-spacing:.1em}
+.card h3{font-size:18px;margin:2px 0 6px}
+.card .q{font-size:15px;color:var(--ink);margin:0 0 10px}
+.card .q b{font-weight:700;border-bottom:2px solid #e8dfc6}
+.card dl{margin:0;font-size:13.5px;color:var(--ink2);display:grid;grid-template-columns:64px 1fr;gap:2px 10px}
+.card dt{color:var(--ink2);opacity:.75}
+.card dd{margin:0}
+.card .go{margin-top:12px;font-size:13px;font-family:var(--mono);color:var(--red)}
+ul.plain{margin:0;padding-left:18px}
+ul.plain li{margin:7px 0;font-size:14.5px;color:var(--ink2)}
+ul.plain li b{color:var(--ink)}
+.note{background:#fffdf7;border:1px solid var(--line);padding:16px 18px;font-size:14px;color:var(--ink2)}
+.note p{margin:0 0 8px}
+.note p:last-child{margin:0}
+code{font-family:var(--mono);font-size:13px;background:#eae4d3;padding:1px 5px;border-radius:2px}
+footer{padding:26px 0 46px;font-size:12.5px;color:var(--ink2);font-family:var(--mono)}
+footer a{color:var(--red);text-decoration:none;border-bottom:1px solid #dcc9c9}
+.row{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:14px}
+@media (max-width:520px){
+  .card{padding:16px 16px}
+  .card dl{grid-template-columns:56px 1fr}
+  .hd{padding:26px 0 20px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="kicker">硬账 · 三件</div>
+    <h1>打工人硬账</h1>
+    <p class="lede">三个只做一件事的工具：<b>算清钱</b>、<b>写清话</b>、<b>找对门</b>。输入你的数字，输出区间、条文出处和可复制的文书。</p>
+    <div class="meta">
+      <span>纯前端单页</span><i>·</i><span>数据不出浏览器</span><i>·</i><span>断网可用</span><i>·</i><span>条文标出处</span><i>·</i><span>不替你下结论</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>三个工具</h2>
+    <p class="sub">点开即用，不用注册，不填手机号。</p>
+
+    <a class="card" href="yajin/">
+      <div class="no">01</div>
+      <h3>押金体检</h3>
+      <p class="q">房东该退我多少？<b>扣的钱有没有依据？</b></p>
+      <dl>
+        <dt>你填</dt><dd>月租、押金、已住月数、房东列出的扣款项与理由</dd>
+        <dt>它出</dt><dd>可主张的金额区间（不是单一数字）、每项扣款对应的条文、协商时可用的三句话</dd>
+        <dt>口径</dt><dd>《民法典》租赁合同章 + 《消保法实施条例》第二十条至第二十二条（押金/预付款须事先约定退还方式与时限）</dd>
+      </dl>
+      <div class="go">打开 →</div>
+    </a>
+
+    <a class="card" href="tousu/">
+      <div class="no">02</div>
+      <h3>投诉信工厂</h3>
+      <p class="q">被坑了，<b>该找谁、凭什么、多久该升级？</b></p>
+      <dl>
+        <dt>你填</dt><dd>场景（预付卡 / 自动续费 / 快递 / 网购 / 维修 / 物业）+ 事实经过</dd>
+        <dt>它出</dt><dd>一封可投递的投诉信、四级投递路径（先谁、后谁、最后谁）、证据清单</dd>
+        <dt>口径</dt><dd>按场景给对应依据条文；预付卡场景含「停业或迁移须提前 30 日公告」这一条</dd>
+      </dl>
+      <div class="go">打开 →</div>
+    </a>
+
+    <a class="card" href="laodong/">
+      <div class="no">03</div>
+      <h3>劳动仲裁算盘</h3>
+      <p class="q">被裁/离职，<b>公司到底欠我几笔，哪笔快过期？</b></p>
+      <dl>
+        <dt>你填</dt><dd>入职离职日期、月薪、解除方式、有无合同/加班/未休年假</dd>
+        <dt>它出</dt><dd>六项分开算（经济补偿 N / 欠薪 / 未签合同二倍工资 / 加班费 / 未休年假 / 社保归属）、时效倒计时、仲裁请求清单、证据清单、申请书草稿</dd>
+        <dt>口径</dt><dd>《劳动合同法》第四十七条（N，社平三倍封顶与 12 年上限）、第八十二条（二倍工资）、第八十七条（违法解除 2N）</dd>
+      </dl>
+      <div class="go">打开 →</div>
+    </a>
+  </section>
+
+  <section>
+    <h2>为什么做成一个能下载的网页</h2>
+    <p class="sub">不是技术选择，是这类数据本身的属性决定的。</p>
+    <ul class="plain">
+      <li><b>要填的东西太敏感。</b>工资、合同、聊天记录、房东姓名——这些一旦上传到某个服务器，你无法收回。所以三个工具都是<b>单个 HTML 文件</b>，计算全部在你自己的浏览器里跑。</li>
+      <li><b>断网也能用。</b>没有 CDN、没有字体外链、没有统计脚本。右键「另存为」存到本地，双击就能打开。</li>
+      <li><b>能被检查。</b>源码就在本仓库里，你可以自己搜「fetch」——一个都没有。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>它不做什么</h2>
+    <p class="sub">这一段比上面都重要。</p>
+    <div class="note">
+      <p><b>不预测结果。</b>它算的是「按公开条文你手上有哪些项、大概多少钱」，不是「你能拿到多少钱」。仲裁和诉讼看证据、看地方口径、看对方怎么辩。</p>
+      <p><b>不给「你应该去仲裁」这种结论。</b>要不要走程序，取决于你的时间、证据和风险承受度——这个只有你自己能判断。</p>
+      <p><b>不覆盖地方细则。</b>各地社平工资、加班费基数、仲裁实务口径差别不小，工具里给的是全国口径 + 明确标注「以当地为准」的位置。</p>
+      <p><b>不构成法律意见。</b>金额一律给区间，文书一律给草稿；涉及重大金额或复杂情形，请找执业律师。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>三个工具是怎么来的</h2>
+    <p class="sub">说清楚来源，你才好判断该不该信。</p>
+    <ul class="plain">
+      <li><b>从真实需求里选的题</b>，不是拍脑袋：一个平台上 99 条公开愿望里，票数最高的几条是「帮我写投诉」「旧物别浪费」「失业了不知道能领什么」——三个工具分别对应前三类。</li>
+      <li><b>条文是抄原文，不是凭记忆。</b>每条引用都去官方站点核对过措辞；写错过一次（把「价款或者费用、预付款退还方式、违约责任」记成了「价款、退款方式」），已按原文改正。</li>
+      <li><b>算完自己验算。</b>每个工具都有一组固定输入的期望值，用来自检——有一次是<b>期望值写错了、代码是对的</b>，先怀疑期望再怀疑实现，才没把正确的工具改坏。</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>作者：林小黑（AI 开发者分身「老严」产出）</div>
+    <div>源码：<a href="https://github.com/samforce2003/yingzhang">github.com/samforce2003/yingzhang</a></div>
+    <div>最后更新：2026-10-28 · 不构成法律意见 · 金额为区间估算</div>
+  </footer>
+
+</div>
+</body>
+</html>

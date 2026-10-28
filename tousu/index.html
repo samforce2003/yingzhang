@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="选场景、填事实，生成一封能直接发出去的投诉信：含依据条文、具体诉求、投递路径和证据清单。单文件、离线可用、数据不上传。">
+<title>投诉信工厂 · 把「我要投诉」写成一封能用的信</title>
+<style>
+:root{
+  --bg:#f6f5f1;--surface:#fffefb;--ink:#1b1a17;--ink2:#5d5a52;--ink3:#8d8a80;
+  --line:#e2dfd6;--line2:#cfcbc0;--safe:#2f6b4f;--warn:#8a5a12;--risk:#8f2f24;
+  --accent:#24405c;--r:10px;--shadow:0 1px 2px rgba(27,26,23,.05),0 6px 18px rgba(27,26,23,.04);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.65}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px 96px}
+header{padding:24px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+h1{font-size:21px;line-height:1.35;margin:0 0 6px;letter-spacing:.01em}
+.sub{color:var(--ink2);font-size:13.5px;margin:0}
+.badge{display:inline-block;font-size:11.5px;color:var(--ink2);border:1px solid var(--line2);
+  border-radius:999px;padding:2px 9px;margin:10px 6px 0 0}
+section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+h2{font-size:15px;margin:0 0 4px;letter-spacing:.02em}
+h2 .n{color:var(--ink3);font-weight:400;margin-right:6px;font-variant-numeric:tabular-nums}
+.hint{color:var(--ink3);font-size:12.5px;margin:0 0 14px;line-height:1.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+label.f{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+input,select,textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);background:#fbfaf6;
+  border:1px solid var(--line2);border-radius:7px;padding:9px 10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+textarea{resize:vertical;min-height:74px;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{font-size:12.5px;border:1px solid var(--line2);background:#fbfaf6;color:var(--ink2);
+  border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1.3}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .t{flex:1;font-size:13.5px}
+.row .t small{display:block;color:var(--ink3);font-size:11.5px;line-height:1.45}
+.seg{display:flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:0 0 auto}
+.seg button{font:inherit;font-size:12px;border:0;background:#fbfaf6;color:var(--ink2);
+  padding:7px 10px;cursor:pointer;border-right:1px solid var(--line2);line-height:1.2}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.steps{counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding:0 0 14px 30px;font-size:13.5px}
+.steps li:before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+  border:1px solid var(--line2);border-radius:50%;font-size:11.5px;color:var(--ink2);
+  display:flex;align-items:center;justify-content:center;background:#fbfaf6}
+.steps li:after{content:"";position:absolute;left:10px;top:23px;bottom:0;width:1px;background:var(--line)}
+.steps li:last-child:after{display:none}
+.steps b{font-weight:600}
+.steps small{display:block;color:var(--ink3);font-size:12px}
+.letter{font-family:"Songti SC","STSong",SimSun,"Noto Serif CJK SC",serif;
+  font-size:14px;line-height:1.9;white-space:pre-wrap;background:#fff;border:1px solid var(--line);
+  border-radius:8px;padding:18px 16px;min-height:320px;color:#191817}
+.warnbox{border-left:3px solid var(--warn);background:#fdfaf2;padding:9px 12px;font-size:12.5px;color:var(--warn);
+  border-radius:0 6px 6px 0;margin:0 0 12px}
+.warnbox ul{margin:4px 0 0;padding-left:18px}
+.warnbox li{line-height:1.6}
+.btnbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{font:inherit;font-size:13.5px;padding:10px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--accent);background:var(--accent);color:#fff}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.ck{display:flex;gap:9px;align-items:flex-start;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line)}
+.ck:last-child{border-bottom:0}
+.ck input{width:17px;height:17px;margin:2px 0 0;flex:0 0 auto;accent-color:var(--accent)}
+.ck span small{display:block;color:var(--ink3);font-size:11.5px}
+.note{font-size:12.5px;color:var(--ink3);line-height:1.6}
+.note b{color:var(--ink2)}
+.law{font-size:12.5px;color:var(--ink2);border-top:1px dashed var(--line);padding-top:10px;margin-top:12px}
+.foot{color:var(--ink3);font-size:12px;line-height:1.6;text-align:center;padding:6px 0 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  background:#1b1a17;color:#fff;font-size:13px;padding:9px 16px;border-radius:8px;opacity:0;
+  transition:opacity .2s,transform .2s;pointer-events:none;z-index:60}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media print{
+  body{background:#fff}
+  header,section:not(.print-me),.btnbar,.foot,.toast{display:none!important}
+  .print-me{border:0;box-shadow:none;padding:0;margin:0}
+  .print-me h2{display:none}
+  .letter{border:0;padding:0;font-size:12pt;line-height:1.85}
+  .wrap{padding:0;max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>投诉信工厂</h1>
+    <p class="sub">选场景 → 填 5 项事实 → 得到一封带依据、带诉求、带投递路径的信。数据只在你自己的浏览器里。</p>
+    <div>
+      <span class="badge">单文件 · 断网可用</span>
+      <span class="badge">不上传任何内容</span>
+      <span class="badge">不承诺结果</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="n">01</span>选场景</h2>
+    <p class="hint">场景决定三件事：该引用哪条依据、该找谁、需要留什么证据。选错场景，信写得再狠也会被退回。</p>
+    <div class="chips" id="scenChips"></div>
+    <div class="route" id="routeBox" style="margin-top:4px"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>填事实</h2>
+    <p class="hint">只填你确定的事。日期、金额、单号越具体，对方越难用「查不到」拖过去。留空的项会在信里显示为 <b>＿＿</b>，不会替你编。</p>
+    <div class="grid" id="fieldBox"></div>
+    <div style="margin-top:10px">
+      <label class="f" for="f_story">事情经过（两三句就够：承诺了什么、实际发生了什么、你什么时候提过）</label>
+      <textarea id="f_story" data-k="story" placeholder="例：办卡时说随时可退，10 月 8 日店里贴出停业通知，微信联系店长不回，卡里还有 6 节课没上。"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <label class="f" for="f_asked">你已经怎么沟通过（有就填，没有写「尚未沟通」）</label>
+      <input id="f_asked" data-k="asked" placeholder="例：10 月 9 日微信联系店长，未回复；10 月 11 日电话无人接听">
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>选诉求</h2>
+    <p class="hint">一封投诉信只解决一件事。诉求越具体，越容易被处理；「希望给个说法」通常换不来任何动作。</p>
+    <div class="chips" id="demandChips"></div>
+    <div class="grid">
+      <div>
+        <label class="f" for="f_amount">争议金额（元）</label>
+        <input id="f_amount" data-k="amount" inputmode="decimal" placeholder="例：2400">
+      </div>
+      <div>
+        <label class="f" for="f_deadline">给对方答复的天数</label>
+        <select id="f_deadline" data-k="deadline">
+          <option value="7">7 天（推荐）</option>
+          <option value="3">3 天（较紧）</option>
+          <option value="15">15 天（复杂事项）</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div>
+        <label class="f" for="f_name">你的称呼（可不填真名）</label>
+        <input id="f_name" data-k="name" placeholder="例：王先生 / 李女士">
+      </div>
+      <div>
+        <label class="f" for="f_phone">联系电话</label>
+        <input id="f_phone" data-k="phone" inputmode="tel" placeholder="例：13800000000">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>证据清单</h2>
+    <p class="hint">先备齐证据再发信。勾选只是给你自己看的，不会上传。</p>
+    <div id="evBox"></div>
+  </section>
+
+  <section class="print-me">
+    <h2><span class="n">05</span>信</h2>
+    <div class="btnbar" style="margin:0 0 12px">
+      <div class="seg" role="group" aria-label="信件语气">
+        <button id="m0" aria-pressed="true">协商版</button>
+        <button id="m1" aria-pressed="false">升级版（致监管部门）</button>
+      </div>
+      <button class="btn ghost" id="btnPrint">打印 / 存 PDF</button>
+    </div>
+    <div id="gaps" class="warnbox" hidden></div>
+    <div class="letter" id="letter"></div>
+    <div class="btnbar">
+      <button class="btn" id="btnCopy">复制全文</button>
+      <button class="btn ghost" id="btnTxt">下载 .txt</button>
+      <button class="btn ghost" id="btnReset">清空重填</button>
+    </div>
+    <div class="law" id="lawBox"></div>
+    <p class="note" style="margin-top:12px"><b>为什么这么写：</b>① 只写事实，不写情绪——情绪会被当成「情绪化投诉」；② 只引用条文原文能覆盖的部分，不替你下法律结论；③ 只提对方做得到的具体动作，并且给一个明确的答复期限。</p>
+    <p class="note" style="margin-top:8px"><b>怎么发出去：</b>优先站内客服/微信/邮件（有记录），纸质函件用挂号信或 EMS 并留回执。发完截图存好，这是下一步向监管部门投诉时要提交的「已协商」证据。</p>
+  </section>
+
+  <p class="foot">本工具只帮你把事实和依据写清楚，不构成法律意见，也不承诺处理结果。<br>涉及金额较大或已进入诉讼的，请咨询执业律师或当地法律援助中心（12348）。</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+var today = new Date();
+function cn(d){ return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日'; }
+function plusDays(n){ var d=new Date(today.getTime()); d.setDate(d.getDate()+n); return cn(d); }
+function money(v){
+  if(v===undefined||v===null||v==='') return '';
+  var n=Number(String(v).replace(/[^\d.]/g,''));
+  if(!isFinite(n)||n<=0) return String(v);
+  return n.toLocaleString('zh-CN',{maximumFractionDigits:2});
+}
+
+var SCEN = {
+  prepaid:{
+    name:'预付卡 / 会员卡',
+    tag:'健身房、教培、美容院、洗车卡：店关了、课停了、卡不给退',
+    title:'预付式消费退款',
+    fields:[
+      {k:'merchant',label:'商家名称',ph:'例：XX健身（XX路店）'},
+      {k:'card',label:'卡种 / 课程',ph:'例：两年卡 / 60 节私教课'},
+      {k:'date',label:'办卡或付款日期',ph:'例：2025-06-15'},
+      {k:'amount',label:'已付金额（元）',ph:'例：4800'},
+      {k:'left',label:'剩余金额 / 剩余课时',ph:'例：还剩 2400 元 / 28 节课'},
+      {k:'state',label:'商家目前状态',ph:'例：门店关闭，电话不通',type:'select',
+        opts:['门店仍在营业','门店已关闭','已转让给他人','联系不上']}
+    ],
+    facts:function(f){
+      return [
+        (f.date?f.date+'，':'')+'我在'+(f.merchant||'＿＿')+'办理了'+(f.card||'预付卡')+(f.amount?'，支付 '+money(f.amount)+' 元':'')+'。',
+        f.left?'尚未消费部分：'+f.left+'。':'',
+        f.state?'该商家目前状态：'+f.state+'。':''
+      ];
+    },
+    status:'我多次要求退还未消费部分，对方未给出可执行的退款安排。',
+    demands:['退还未消费余额','按实际消费比例结算后出具书面退款清单','书面确认退款到账时间','解除会员协议并停止后续扣费'],
+    laws:[
+      ['《消费者权益保护法》第五十三条','经营者以预收款方式提供商品或者服务的，应当按照约定提供；未按照约定提供的，应当按照消费者的要求履行约定或者退回预付款。'],
+      ['《消费者权益保护法实施条例》第二十二条','经营者以收取预付款方式提供商品或者服务的，应当与消费者订立书面合同，约定商品或者服务的具体内容、价款或者费用、预付款退还方式、违约责任等事项；经营者未按照约定提供商品或者服务的，应当按照消费者的要求履行约定或者退还预付款。'],
+      ['《消费者权益保护法实施条例》第二十一条','经营者决定停业或者迁移服务场所的，应当提前 30 日在其经营场所、网站、网店首页等的醒目位置公告经营者的有效联系方式等信息。'],
+      ['《民法典》第四百九十七条','提供格式条款一方不合理地免除或者减轻其责任、加重对方责任、限制对方主要权利的，该格式条款无效（对应「一经售出概不退款」这类条款）。']
+    ],
+    routes:[
+      ['书面找商家（留痕）','微信/短信/邮件都可以，把卡号、金额、诉求一次写清，截图保存。','当天'],
+      ['全国 12315 平台','网站 12315.cn 或微信小程序「12315」，选择商家注册地市场监管部门，上传合同与付款凭证。','3 个工作日内受理'],
+      ['行业主管部门','健身→体育局；学科类培训→教育局；美容美发→商务/卫健；单用途预付卡备案→商务局。','与 12315 并行'],
+      ['涉嫌卷款跑路','门店突然关闭、负责人失联且金额较大的，可向公安机关经侦部门报案。','视情况'],
+      ['12345 政务热线','作为兜底渠道，工单会转派到属地部门，可用于催办。','7 个工作日内答复']
+    ],
+    evidence:['付款记录（微信/支付宝/银行卡账单）','会员合同、办卡协议或电子确认页','消费记录、剩余课时/余额截图','门店关闭或停业的照片（带时间）','与商家沟通的聊天记录、通话记录','商家营业执照照片（能拍到就拍）']
+  },
+
+  autopay:{
+    name:'自动续费 / 会员扣费',
+    tag:'没印象开过、没看到提示、取消了还在扣',
+    title:'自动续费退款',
+    fields:[
+      {k:'merchant',label:'扣费方（App / 平台名称）',ph:'例：XX 视频会员'},
+      {k:'channel',label:'扣款渠道',ph:'例：支付宝免密支付',type:'select',
+        opts:['支付宝免密支付','微信自动扣费','苹果 App Store','银行卡代扣','其他']},
+      {k:'date',label:'最近一次扣费日期',ph:'例：2026-10-20'},
+      {k:'amount',label:'单次扣费金额（元）',ph:'例：25'},
+      {k:'times',label:'连续扣了几次',ph:'例：6 次，共 150 元'},
+      {k:'known',label:'你是否被明确提示过',ph:'例：开通页默认勾选，未单独提示',type:'select',
+        opts:['从未提示','默认勾选、字很小','提示了但我已在到期前取消','提示了但我不认可']}
+    ],
+    facts:function(f){
+      return [
+        (f.date?f.date+'，':'')+(f.merchant||'＿＿')+'通过'+(f.channel||'自动扣款')+'扣款'+(f.amount?money(f.amount)+' 元':'＿＿')+(f.times?'，累计'+f.times:'')+'。',
+        f.known?'关于续费提示：'+f.known+'。':'',
+        '我在扣费前没有作出续费的意思表示，也没有收到能够引起注意的续费提醒。'
+      ];
+    },
+    status:'我要求退还上述未经显著提示的续费款项，并关闭自动续费。对方未处理。',
+    demands:['退还未经显著提示的续费款项','立即关闭自动续费并书面确认','解除代扣协议、删除已绑定的支付授权','提供扣费明细与开通记录'],
+    laws:[
+      ['《网络交易监督管理办法》第十八条','网络交易经营者采取自动展期、自动续费等方式提供服务的，应当在消费者接受服务前和自动展期、自动续费等日期前五日，以显著方式提请消费者注意，由消费者自主选择。'],
+      ['《消费者权益保护法》第八条','消费者享有知悉其购买、使用的商品或者接受的服务的真实情况的权利。'],
+      ['《民法典》第四百九十六条','采用格式条款订立合同的，提供格式条款的一方应当采取合理的方式提示对方注意免除或者减轻其责任等与对方有重大利害关系的条款。']
+    ],
+    routes:[
+      ['先关掉扣款授权','支付宝：我的-设置-支付设置-免密支付/自动扣款；微信：我-服务-钱包-支付设置-扣费服务；苹果：设置-Apple ID-订阅。关闭后截图。','立刻'],
+      ['向扣费方书面要求退款','App 内客服工单 + 邮件，写明订单号与「未显著提示」。','当天'],
+      ['全国 12315 平台','按扣费方注册地投诉，附扣费截图与开通页面截图。','3 个工作日受理'],
+      ['工信部 12300','若扣费方为电信/互联网信息服务提供者，可向电信用户申诉受理中心申诉。','15 日内答复']
+    ],
+    evidence:['扣费账单截图（含订单号、时间、金额）','开通/续费页面截图（重点拍提示文字大小与是否默认勾选）','你取消订阅的操作记录或截图','与客服的沟通记录','扣款渠道的授权管理页截图']
+  },
+
+  express:{
+    name:'快递（丢件 / 破损 / 不上门）',
+    tag:'私自放驿站、丢件只赔运费、破损说「外包装完好」',
+    title:'快件损失赔偿',
+    fields:[
+      {k:'merchant',label:'快递公司',ph:'例：XX快递'},
+      {k:'order',label:'运单号',ph:'例：SF1234567890'},
+      {k:'date',label:'寄件或派件日期',ph:'例：2026-10-18'},
+      {k:'amount',label:'物品实际价值（元）',ph:'例：860'},
+      {k:'insured',label:'是否保价',ph:'未保价',type:'select',opts:['未保价','已保价','不清楚']},
+      {k:'issue',label:'具体问题',ph:'丢件 / 破损 / 未送货上门',type:'select',
+        opts:['快件丢失','内件破损','未经同意放驿站/快递柜','长时间不派送','被他人签收']}
+    ],
+    facts:function(f){
+      return [
+        (f.date?f.date+'，':'')+'我通过'+(f.merchant||'＿＿')+'寄送/接收快件，运单号'+(f.order||'＿＿')+'，物品实际价值'+(f.amount?money(f.amount)+' 元':'＿＿')+(f.insured?'，'+f.insured:'')+'。',
+        f.issue?'问题为：'+f.issue+'。':'',
+        '我已在企业内部投诉，对方给出的处理方案与实际损失差距过大。'
+      ];
+    },
+    status:'我要求按物品实际价值赔偿，对方未在合理期限内给出可接受的方案。',
+    demands:['按物品实际价值赔偿损失','退还运费','补发或按订单金额退款','书面答复处理结果'],
+    laws:[
+      ['《快递暂行条例》第二十五条','经营快递业务的企业应当将快件投递到约定的收件地址、收件人或者收件人指定的代收人，并告知收件人或者代收人当面验收。'],
+      ['《快递暂行条例》第二十七条','快件延误、丢失、损毁或者内件短少的，对保价的快件，应当按照经营快递业务的企业与寄件人约定的保价规则确定赔偿责任；对未保价的快件，依照民事法律的有关规定确定赔偿责任。'],
+      ['《民法典》第八百三十三条','货物的毁损、灭失的赔偿额，当事人有约定的，按照其约定；没有约定或者约定不明确，依照本法第五百一十一条的规定确定。']
+    ],
+    routes:[
+      ['先向快递企业投诉','必须走这一步并拿到工单号——这是向邮政管理部门申诉的前置条件。','当天'],
+      ['国家邮政局申诉','企业投诉 7 日未处理或对结果不满，到 ss w z.spb.gov.cn（国家邮政局申诉网站）或拨 12305 申诉。','7 日后'],
+      ['全国 12315 平台','若为电商平台下单发货，可同时向平台与商家所在地市场监管部门投诉。','并行'],
+      ['诉讼 / 小额诉讼','金额明确、证据齐全的，可走小额诉讼程序，成本低。','争议金额较大时']
+    ],
+    evidence:['运单号、物流轨迹截图','物品价值凭证（订单截图、发票、付款记录）','破损照片/视频（含包装六面）','与快递员、客服的沟通记录','企业内部投诉工单号与答复','未经同意放驿站的取件通知截图']
+  },
+
+  online:{
+    name:'网购（质量 / 假货 / 不发货）',
+    tag:'说是正品收到假货、七天无理由被拒、付款后不发货',
+    title:'网购纠纷处理',
+    fields:[
+      {k:'merchant',label:'店铺名称',ph:'例：XX旗舰店'},
+      {k:'platform',label:'平台',ph:'例：淘宝 / 京东 / 拼多多 / 抖音'},
+      {k:'order',label:'订单号',ph:'例：2026101888888888'},
+      {k:'date',label:'下单日期',ph:'例：2026-10-18'},
+      {k:'amount',label:'订单金额（元）',ph:'例：399'},
+      {k:'issue',label:'问题类型',ph:'与描述不符',type:'select',
+        opts:['质量问题','疑似假货','与描述严重不符','付款后不发货','拒绝七天无理由退货','虚假宣传']}
+    ],
+    facts:function(f){
+      return [
+        (f.date?f.date+'，':'')+'我在'+(f.platform||'＿＿')+'的'+(f.merchant||'＿＿')+'下单，订单号'+(f.order||'＿＿')+'，支付'+(f.amount?money(f.amount)+' 元':'＿＿')+'。',
+        f.issue?'收到商品后发现：'+f.issue+'。':'',
+        '我已向商家与平台申请售后，平台处理结果不能弥补我的损失。'
+      ];
+    },
+    status:'我要求退货退款并由商家承担运费，平台未支持。',
+    demands:['退货退款（含往返运费）','换货或免费维修','按法律规定赔付（欺诈情形）','履行发货义务或退款','删除虚假宣传页面'],
+    laws:[
+      ['《消费者权益保护法》第二十四条','经营者提供的商品或者服务不符合质量要求的，消费者可以依照国家规定、当事人约定退货，或者要求经营者履行更换、修理等义务。'],
+      ['《消费者权益保护法》第二十五条','经营者采用网络、电视、电话、邮购等方式销售商品，消费者有权自收到商品之日起七日内退货，且无需说明理由（法定例外商品除外）。'],
+      ['《消费者权益保护法》第五十五条','经营者提供商品或者服务有欺诈行为的，应当按照消费者的要求增加赔偿其受到的损失，增加赔偿的金额为消费者购买商品的价款或者接受服务的费用的三倍；增加赔偿的金额不足五百元的，为五百元。'],
+      ['《电子商务法》第三十八条','电子商务平台经营者知道或者应当知道平台内经营者销售的商品或者提供的服务不符合保障人身、财产安全的要求，或者有其他侵害消费者合法权益行为，未采取必要措施的，依法与该平台内经营者承担连带责任。']
+    ],
+    routes:[
+      ['平台内售后 → 平台介入','先走平台流程并拿到工单号，平台有义务介入调解。','当天'],
+      ['全国 12315 平台','可投诉商家，也可投诉平台；附订单、宣传页截图、实物照片。','3 个工作日受理'],
+      ['平台所在地市场监管部门','平台注册地（如杭州、上海、北京）市场监管部门对平台有监管职责。','并行'],
+      ['互联网法院 / 小额诉讼','金额不大也可线上立案，多数平台会在此前主动和解。','争议金额较大时']
+    ],
+    evidence:['订单详情页截图（含商品标题与宣传语）','商品实物照片或视频','与商家/平台客服的聊天记录','售后工单号与平台处理结果','正品鉴定结论或品牌方回复（涉假货）','快递面单与开箱视频']
+  },
+
+  repair:{
+    name:'维修 / 家政 / 搬家',
+    tag:'报价 200 收 800、越修越坏、搬坏了不认',
+    title:'服务费用与损失赔偿',
+    fields:[
+      {k:'merchant',label:'商家 / 师傅名称',ph:'例：XX家电维修'},
+      {k:'service',label:'服务项目',ph:'例：空调加氟 + 清洗'},
+      {k:'date',label:'服务日期',ph:'例：2026-10-20'},
+      {k:'amount',label:'实际支付金额（元）',ph:'例：800'},
+      {k:'quoted',label:'事前报价（元）',ph:'例：200'},
+      {k:'damage',label:'造成的其他损失（元）',ph:'例：地板泡水 1200，可留空'}
+    ],
+    facts:function(f){
+      return [
+        (f.date?f.date+'，':'')+'我联系'+(f.merchant||'＿＿')+'提供'+(f.service||'上门服务')+'，事前报价'+(f.quoted?money(f.quoted)+' 元':'＿＿')+'，实际被收取'+(f.amount?money(f.amount)+' 元':'＿＿')+'。',
+        f.damage?'服务过程中另造成损失：'+f.damage+' 元。':'',
+        '对方未在服务前出示完整收费明细，也未就额外费用征得我同意。'
+      ];
+    },
+    status:'我要求退还超出报价部分的费用并赔偿损失，对方拒绝。',
+    demands:['退还超出事前报价的费用','提供完整收费明细与发票','免费返修至正常使用','赔偿服务过程中造成的损失'],
+    laws:[
+      ['《消费者权益保护法》第八条','消费者享有知悉其购买、使用的商品或者接受的服务的真实情况的权利（含价格、费用构成）。'],
+      ['《价格法》第十三条','经营者销售、收购商品和提供服务，应当按照政府价格主管部门的规定明码标价，注明商品的品名、产地、规格、等级、计价单位、价格或者服务的项目、收费标准等有关情况。'],
+      ['《消费者权益保护法》第二十四条','经营者提供的服务不符合质量要求的，消费者可以要求履行更换、修理等义务。']
+    ],
+    routes:[
+      ['书面找商家','微信文字确认「事前报价多少、实际收多少、为什么」，让对方留下书面说法。','当天'],
+      ['下单平台介入','通过美团/58/电商平台下单的，先申请平台介入。','当天'],
+      ['全国 12315 平台','按商家注册地投诉，附报价截图与支付记录。','3 个工作日'],
+      ['12345 / 行业协会','家电维修可向行业协会或 12345 反映，工单会转派属地部门。','7 个工作日']
+    ],
+    evidence:['事前报价的聊天记录或平台页面截图','支付记录与收款方信息','服务前后照片（损坏部位要拍清）','对方开具的收据/发票（有则更好）','损失物品的购买凭证']
+  },
+
+  property:{
+    name:'物业（收费不服务 / 断水电）',
+    tag:'钱照收、事不办，还用停水停电催费',
+    title:'物业服务争议',
+    fields:[
+      {k:'merchant',label:'物业公司名称',ph:'例：XX物业服务有限公司'},
+      {k:'community',label:'小区名称',ph:'例：XX花园'},
+      {k:'date',label:'争议发生时间',ph:'例：2026-09 至今'},
+      {k:'amount',label:'争议金额（元，可留空）',ph:'例：1200'},
+      {k:'issue',label:'争议类型',ph:'服务不达标',type:'select',
+        opts:['服务长期不达标','乱收费/未公示','以停水停电催费','公共收益不公开','擅自改变公共区域用途']}
+    ],
+    facts:function(f){
+      return [
+        '我是'+(f.community||'＿＿')+'业主，物业服务方为'+(f.merchant||'＿＿')+'。',
+        (f.date?'争议自 '+f.date+' 起持续存在：':'')+(f.issue||'服务存在问题')+'。',
+        f.amount?'涉及金额约 '+money(f.amount)+' 元。':'',
+        '我已向物业当面及电话反映，未获书面答复。'
+      ];
+    },
+    status:'我要求书面答复并整改，物业未回应。',
+    demands:['公示收费标准与服务内容','公示公共收益收支','退还多收费用','恢复供水供电并书面道歉','限期整改并书面答复'],
+    laws:[
+      ['《民法典》第九百四十三条','物业服务人应当定期将服务事项、负责人员、质量要求、收费项目、收费标准、履行情况，以及维修资金使用情况、业主共有部分的经营与收益情况等以合理方式向业主公开并向业主大会、业主委员会报告。'],
+      ['《民法典》第九百四十四条','业主违反约定逾期不支付物业费的，物业服务人可以催告其在合理期限内支付……物业服务人不得采取停止供电、供水、供热、供燃气等方式催交物业费。']
+    ],
+    routes:[
+      ['书面函告物业','挂号信或 EMS 寄送，要求 15 日内书面答复——这是后续投诉的关键证据。','当天'],
+      ['业委会 / 社区 / 街道办','先走业主自治与属地调解，街道办对物业有协调职责。','3-7 日'],
+      ['住建局（物业主管部门）','向小区所在区住建局物业科投诉，可要求其约谈并记入信用档案。','7 个工作日'],
+      ['12345 政务热线','停水停电属于典型可督办事项，注明「已影响基本生活」。','7 个工作日']
+    ],
+    evidence:['物业服务合同或收费公示照片','缴费记录与发票','服务缺失的照片/视频（带时间）','停水停电的通知、照片或视频','业主群沟通记录','向物业反映问题的记录']
+  }
+};
+
+var state = {scen:'prepaid', mode:0, demands:{}, check:{}};
+
+function $(id){ return document.getElementById(id); }
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!==undefined)e.textContent=txt; return e; }
+function val(k){ var e=document.querySelector('[data-k="'+k+'"]'); return e? String(e.value||'').trim() : ''; }
+function allFields(){ return Object.keys(SCEN[state.scen].fields).map(function(i){ return SCEN[state.scen].fields[i]; }); }
+
+function buildScenChips(){
+  var box=$('scenChips'); box.innerHTML='';
+  Object.keys(SCEN).forEach(function(k){
+    var b=el('button','chip',SCEN[k].name);
+    b.type='button'; b.setAttribute('aria-pressed', k===state.scen?'true':'false');
+    b.onclick=function(){ state.scen=k; state.demands={}; state.check={}; buildScenChips(); buildFields(); buildDemands(); buildRoute(); buildEvidence(); render(); save(); };
+    box.appendChild(b);
+  });
+}
+
+function buildFields(){
+  var box=$('fieldBox'); box.innerHTML='';
+  allFields().forEach(function(f){
+    var w=el('div');
+    var l=el('label','f',f.label); l.setAttribute('for','f_'+f.k);
+    w.appendChild(l);
+    var inp;
+    if(f.type==='select'){
+      inp=el('select'); inp.id='f_'+f.k; inp.setAttribute('data-k',f.k);
+      var o0=el('option','',f.ph||'请选择'); o0.value=''; inp.appendChild(o0);
+      f.opts.forEach(function(o){ var op=el('option','',o); op.value=o; inp.appendChild(op); });
+    }else{
+      inp=el('input'); inp.id='f_'+f.k; inp.type='text'; inp.setAttribute('data-k',f.k); inp.placeholder=f.ph||'';
+    }
+    inp.addEventListener('input',render); inp.addEventListener('change',render);
+    w.appendChild(inp); box.appendChild(w);
+  });
+  // 恢复已填值
+  var saved=load(); if(saved && saved.scen===state.scen && saved.fields){ Object.keys(saved.fields).forEach(function(k){
+    var e=document.querySelector('[data-k="'+k+'"]'); if(e && saved.fields[k]) e.value=saved.fields[k];
+  }); }
+}
+
+function buildDemands(){
+  var box=$('demandChips'); box.innerHTML='';
+  var S=SCEN[state.scen];
+  S.demands.forEach(function(d,i){
+    var on = state.demands[d]!==undefined ? state.demands[d] : i<2;
+    state.demands[d]=on;
+    var b=el('button','chip',d); b.type='button'; b.setAttribute('aria-pressed',on?'true':'false');
+    b.onclick=function(){ state.demands[d]=!state.demands[d]; b.setAttribute('aria-pressed',state.demands[d]?'true':'false'); render(); save(); };
+    box.appendChild(b);
+  });
+}
+
+function buildRoute(){
+  var S=SCEN[state.scen], box=$('routeBox'); box.innerHTML='';
+  var ol=el('ol','steps');
+  S.routes.forEach(function(r){
+    var li=el('li');
+    var b=el('b','',r[0]); li.appendChild(b);
+    var s=el('span','',r[1]); li.appendChild(s);
+    var t=el('small','','时限：'+r[2]); li.appendChild(t);
+    ol.appendChild(li);
+  });
+  box.appendChild(ol);
+}
+
+function buildEvidence(){
+  var S=SCEN[state.scen], box=$('evBox'); box.innerHTML='';
+  S.evidence.forEach(function(e,i){
+    var row=el('label','ck');
+    var cb=el('input'); cb.type='checkbox'; cb.checked=!!state.check[e];
+    cb.onchange=function(){ state.check[e]=cb.checked; save(); };
+    var sp=el('span','',e);
+    row.appendChild(cb); row.appendChild(sp); box.appendChild(row);
+  });
+}
+
+function factsText(){
+  var S=SCEN[state.scen], f={};
+  allFields().forEach(function(x){ f[x.k]=val(x.k); });
+  var arr=S.facts(f).filter(function(s){ return s && s.trim(); });
+  var story=val('story');
+  if(story) arr.push('情况说明：'+story.replace(/\s+$/,'')+(/[。！？]$/.test(story)?'':'。'));
+  var asked=val('asked');
+  if(asked) arr.push('沟通经过：'+asked+(/[。！？]$/.test(asked)?'':'。'));
+  return arr;
+}
+
+function demandList(){
+  var S=SCEN[state.scen], out=[];
+  S.demands.forEach(function(d){ if(state.demands[d]) out.push(d); });
+  return out;
+}
+
+function letter(){
+  var S=SCEN[state.scen], f={};
+  allFields().forEach(function(x){ f[x.k]=val(x.k); });
+  var merchant=f.merchant||'＿＿';
+  var up=state.mode===1;
+  var demands=demandList();
+  var dl=Number(val('deadline')||7);
+  var lines=[];
+  var title='关于要求'+merchant+(demands[0]||S.title)+'的'+(up?'投诉书':'协商函');
+  lines.push(title);
+  lines.push('');
+  if(up){
+    var reg=(S.routes[2]&&S.routes[2][0])||'有关主管部门';
+    lines.push('致：'+merchant);
+    lines.push('抄送：'+(reg.replace(/（.*?）/g,''))+'、全国 12315 平台');
+  }else{
+    lines.push('致：'+merchant);
+  }
+  lines.push('');
+  lines.push('一、事实');
+  factsText().forEach(function(s,i){ lines.push('　'+(i+1)+'. '+s); });
+  lines.push('');
+  lines.push('二、依据');
+  S.laws.forEach(function(l,i){ lines.push('　'+(i+1)+'. '+l[0]+'：'+l[1]); });
+  lines.push('');
+  lines.push('三、我的诉求');
+  if(!demands.length) lines.push('　1. ＿＿（请在上方勾选至少一项具体诉求）');
+  demands.forEach(function(d,i){ lines.push('　'+(i+1)+'. '+d+(/[。！？]$/.test(d)?'':'。')); });
+  lines.push('');
+  lines.push('　请于收到本'+(up?'投诉':'函')+'之日起 '+dl+' 日内书面答复并履行。'+(val('phone')?'答复请致电 '+val('phone')+'。':''));
+  lines.push('');
+  lines.push('四、'+(up?'如逾期未答复':'如逾期未答复'));
+  if(up){
+    lines.push('　我将依据《消费者权益保护法》第三十九条，向上述监管部门及全国 12315 平台正式投诉，并保留通过调解、仲裁或诉讼追究责任的权利。相关证据（见附件清单）已完整保存。');
+  }else{
+    lines.push('　我将向全国 12315 平台及'+(S.routes[2]?S.routes[2][0]:'有关主管部门')+'投诉，并保留通过调解、仲裁或诉讼追究责任的权利。');
+  }
+  if(state.scen==='prepaid' && f.state==='门店已关闭'){
+    lines.push('　另：该商家门店已关闭且无法联系，如拒不退款，我将就涉嫌以预收款方式骗取财物向公安机关经侦部门报案。');
+  }
+  lines.push('');
+  lines.push('五、附件');
+  var ev=[]; S.evidence.forEach(function(e){ if(state.check[e]) ev.push(e); });
+  if(ev.length){ ev.forEach(function(e,i){ lines.push('　'+(i+1)+'. '+e); }); }
+  else { lines.push('　（证据清单见本工具第 04 节，发信前请备齐）'); }
+  lines.push('');
+  lines.push('投诉人：'+(val('name')||'＿＿'));
+  lines.push('联系电话：'+(val('phone')||'＿＿'));
+  lines.push('日期：'+cn(today));
+  lines.push('');
+  lines.push('—— 本函所载事实由本人如实陈述，所引条文为公开发布的法律法规原文；本函不构成法律意见，亦不承诺处理结果。');
+  return {title:title, text:lines.join('\n')};
+}
+
+function gaps(){
+  var S=SCEN[state.scen], miss=[];
+  var need={merchant:'对方名称',date:'日期'};
+  var f={}; allFields().forEach(function(x){ f[x.k]=val(x.k); });
+  if(!f.merchant) miss.push(S.fields[0].label);
+  if(!f.date) miss.push('日期');
+  if(!val('amount') && hasAmountField()) miss.push('金额');
+  if(!val('story')) miss.push('事情经过');
+  if(!val('phone')) miss.push('联系电话');
+  if(!demandList().length) miss.push('至少一项诉求');
+  return miss;
+}
+function hasAmountField(){ var r=false; allFields().forEach(function(x){ if(x.k==='amount') r=true; }); return r; }
+
+function render(){
+  var L=letter();
+  $('letter').textContent=L.text;
+  var m=gaps();
+  var g=$('gaps');
+  if(m.length){ g.hidden=false; g.innerHTML='<b>还差这几项，补上信就能直接用：</b><ul><li>'+m.join('</li><li>')+'</li></ul>'; }
+  else { g.hidden=true; g.innerHTML=''; }
+  var S=SCEN[state.scen];
+  $('lawBox').innerHTML='本场景引用：'+S.laws.map(function(l){ return l[0]; }).join(' · ')+'（条文以官方发布文本为准）';
+}
+
+function toast(t){ var t0=$('toast'); t0.textContent=t; t0.classList.add('on'); clearTimeout(t0._t); t0._t=setTimeout(function(){ t0.classList.remove('on'); },1800); }
+
+function save(){
+  try{
+    var f={}; allFields().forEach(function(x){ var e=document.querySelector('[data-k="'+x.k+'"]'); if(e&&e.value) f[x.k]=e.value; });
+    f.story=val('story'); f.asked=val('asked'); f.phone=val('phone'); f.name=val('name'); f.deadline=val('deadline');
+    localStorage.setItem('tsg_draft', JSON.stringify({scen:state.scen, fields:f, demands:state.demands, check:state.check, mode:state.mode}));
+  }catch(e){ /* 隐私模式/存储禁用：静默降级 */ }
+}
+function load(){
+  try{ var s=localStorage.getItem('tsg_draft'); return s?JSON.parse(s):null; }catch(e){ return null; }
+}
+
+function init(){
+  var d=load();
+  if(d && SCEN[d.scen]){
+    state.scen=d.scen; state.demands=d.demands||{}; state.check=d.check||{}; state.mode=d.mode||0;
+  }
+  buildScenChips(); buildFields(); buildDemands(); buildRoute(); buildEvidence();
+  if(d && d.fields){
+    ['story','asked','phone','name'].forEach(function(k){ var e=document.querySelector('[data-k="'+k+'"]'); if(e&&d.fields[k]) e.value=d.fields[k]; });
+    if(d.fields.deadline){ var s=document.querySelector('[data-k="deadline"]'); if(s) s.value=d.fields.deadline; }
+  }
+  ['story','asked','phone','name','deadline'].forEach(function(k){
+    var e=document.querySelector('[data-k="'+k+'"]'); if(e){ e.addEventListener('input',function(){ render(); save(); }); e.addEventListener('change',function(){ render(); save(); }); }
+  });
+  $('m0').onclick=function(){ state.mode=0; $('m0').setAttribute('aria-pressed','true'); $('m1').setAttribute('aria-pressed','false'); render(); save(); };
+  $('m1').onclick=function(){ state.mode=1; $('m1').setAttribute('aria-pressed','true'); $('m0').setAttribute('aria-pressed','false'); render(); save(); };
+  if(state.mode===1){ $('m1').setAttribute('aria-pressed','true'); $('m0').setAttribute('aria-pressed','false'); }
+
+  $('btnCopy').onclick=function(){
+    var t=letter().text;
+    var done=function(){ toast('已复制，可直接粘贴到微信/工单/邮件'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,fallback); } else { fallback(); }
+    function fallback(){
+      var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ toast('复制失败，请长按选中文字'); }
+      document.body.removeChild(ta);
+    }
+  };
+  $('btnTxt').onclick=function(){
+    var t=letter().text;
+    var blob=new Blob([t],{type:'text/plain;charset=utf-8'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='投诉信-'+SCEN[state.scen].name.replace(/[ /]/g,'')+'-'+today.getFullYear()+(today.getMonth()+1)+today.getDate()+'.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },3000);
+    toast('已下载');
+  };
+  $('btnPrint').onclick=function(){ window.print(); };
+  $('btnReset').onclick=function(){
+    if(!confirm('清空本次填写的内容？')) return;
+    state.demands={}; state.check={};
+    document.querySelectorAll('[data-k]').forEach(function(e){ if(e.tagName==='SELECT') e.value=''; else e.value=''; });
+    try{ localStorage.removeItem('tsg_draft'); }catch(e){}
+    buildDemands(); buildEvidence(); render(); toast('已清空');
+  };
+  render();
+}
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',init); } else { init(); }
+})();
+</script>
+</body>
+</html>

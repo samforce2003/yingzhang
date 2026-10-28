@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>劳动仲裁算盘 · 离职前，先算清公司欠你多少</title>
+<meta name="description" content="按入职离职时间、工资、离职方式、欠薪、加班、未签合同等情况，逐项算出经济补偿/赔偿金、二倍工资、加班费、未休年假，并生成仲裁请求清单、证据清单与申请书草稿。纯本地运行，不上传任何数据。">
+<style>
+:root{
+  --bg:#f6f5f1;
+  --surface:#fffefb;
+  --ink:#1b1a17;
+  --ink2:#5d5a52;
+  --ink3:#8d8a80;
+  --line:#e2dfd6;
+  --line2:#cfcbc0;
+  --safe:#2f6b4f;
+  --warn:#8a5a12;
+  --risk:#8f2f24;
+  --accent:#24405c;
+  --r:10px;
+  --shadow:0 1px 2px rgba(27,26,23,.05),0 6px 18px rgba(27,26,23,.04);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  font-size:15px;line-height:1.62;
+  min-height:100dvh;
+  padding-bottom:calc(66px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+header{padding:22px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+h1{font-size:21px;line-height:1.35;margin:0 0 6px;letter-spacing:-.2px}
+.sub{color:var(--ink2);font-size:13.5px;margin:0}
+.meta{color:var(--ink3);font-size:12.5px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+h2{font-size:15px;margin:0 0 10px;letter-spacing:.2px;display:flex;align-items:baseline;gap:8px}
+h2 .num{color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--line2);border-radius:4px;padding:0 5px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:620px){.grid,.grid3{grid-template-columns:1fr}}
+label.f{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink);font-size:14.5px;font-family:inherit}
+input:focus,select:focus{outline:2px solid rgba(36,64,92,.25);outline-offset:1px;border-color:var(--accent)}
+.hint{font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5}
+.ck{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.ck:last-child{border-bottom:0}
+.ck input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--accent)}
+.ck span{font-size:14px;line-height:1.5}
+.ck small{display:block;color:var(--ink3);font-size:12px;margin-top:2px;line-height:1.45}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:14.5px;font-family:inherit;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:#fff;color:var(--accent)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn:active{transform:translateY(1px)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.sum{border:1px solid var(--line2);border-radius:8px;padding:14px;background:#fbfaf6}
+.sum .big{font-size:28px;font-variant-numeric:tabular-nums;letter-spacing:-.5px;line-height:1.2}
+.sum .cap{font-size:12.5px;color:var(--ink2);margin-bottom:2px}
+.sum .tag{font-size:12px;color:var(--ink3);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--ink3);font-weight:500;background:#faf8f3}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .why{display:block;color:var(--ink3);font-size:11.5px;margin-top:3px;line-height:1.45}
+.pre{white-space:pre-wrap;word-break:break-word;background:#fbfaf6;border:1px solid var(--line);border-radius:8px;padding:13px;font-size:13px;line-height:1.75;font-family:inherit;margin:0;max-height:460px;overflow:auto}
+.note{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:10px;padding-left:10px;border-left:2px solid var(--line2)}
+.warnbox{border:1px solid #e6d3ae;background:#fdf8ec;border-radius:8px;padding:11px 12px;font-size:12.8px;color:#6b4a10;line-height:1.6;margin-top:10px}
+.dangerbox{border:1px solid #e5c3bd;background:#fdf3f1;border-radius:8px;padding:11px 12px;font-size:12.8px;color:#7c2f24;line-height:1.6;margin-top:10px}
+.pill{display:inline-block;font-size:11.5px;padding:1px 6px;border-radius:4px;border:1px solid var(--line2);color:var(--ink2);background:#fff;margin-right:6px}
+.pill.ok{color:var(--safe);border-color:#bcd8c8}
+.pill.risk{color:var(--risk);border-color:#e3c0ba}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:16px;overflow:auto}
+.tab{padding:9px 14px;font-size:14px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.foot{color:var(--ink3);font-size:12px;line-height:1.7;text-align:center;padding:16px 0 26px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,254,251,.96);border-top:1px solid var(--line);backdrop-filter:blur(6px);padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:20}
+.bar .wrap{display:flex;gap:10px}
+.bar .btn{flex:1}
+.hide{display:none}
+@media print{.bar,.tabs,.btn,.noprint{display:none!important}body{background:#fff;padding:0}section{box-shadow:none;border:0;padding:0;margin:0 0 12px}.pre{max-height:none;border:0;padding:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>劳动仲裁算盘</h1>
+  <p class="sub">离职那天，公司欠你的不止最后一个月工资。把该算的算清楚——能算的算成数字，算不出的标出来。</p>
+  <div class="meta"><span>单文件 · 不联网 · 不上传</span><span>依据公开法规整理</span><span>不是法律意见</span></div>
+</header>
+
+<div class="tabs" id="tabs">
+  <div class="tab on" data-p="calc">算账</div>
+  <div class="tab" data-p="proof">证据</div>
+  <div class="tab" data-p="doc">申请书</div>
+</div>
+
+<div id="p-calc">
+  <section>
+    <h2><span class="num">01</span>在职时间</h2>
+    <div class="grid3">
+      <div><label class="f" for="dIn">入职日期</label><input id="dIn" type="date"></div>
+      <div><label class="f" for="dOut">离职日期</label><input id="dOut" type="date"></div>
+      <div><label class="f" for="still">状态</label>
+        <select id="still"><option value="0">已离职</option><option value="1">仍在职</option></select>
+      </div>
+    </div>
+    <div class="hint">工作年限按周年算：满 1 年算 1 个月，余下 6 个月以上算 1 个月，不满 6 个月算半个月（《劳动合同法》第 47 条）。</div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>工资口径</h2>
+    <div class="grid">
+      <div><label class="f" for="wage">离职前 12 个月平均应发工资（元/月）</label><input id="wage" type="number" inputmode="decimal" placeholder="含奖金、津贴、补贴，税前"></div>
+      <div><label class="f" for="cap">当地上年度职工月平均工资（选填，元）</label><input id="cap" type="number" inputmode="decimal" placeholder="填了才判断 3 倍封顶"></div>
+    </div>
+    <div class="hint">经济补偿的基数按「应得工资」算，通常含奖金、津贴、补贴；不是基本工资，也不是到手工资。填了社平工资，超过 3 倍的部分不计入，年限最高 12 年。</div>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>怎么离开的</h2>
+    <div><label class="f" for="way">离职情形（选最接近的一种）</label>
+      <select id="way">
+        <option value="none">我因个人原因主动辞职（无补偿，但欠薪、加班费仍可主张）</option>
+        <option value="force">因公司欠薪 / 未缴社保被迫辞职（第 38 条）</option>
+        <option value="bargain">协商一致解除，公司提出</option>
+        <option value="fire">公司单方解除，没说明理由或理由不成立</option>
+        <option value="fire40">以「不胜任工作 / 客观情况重大变化」为由解除，未提前 30 日通知</option>
+        <option value="discipline">以「严重违纪」为由解除</option>
+        <option value="expire">合同到期，公司不续签或降低条件续签</option>
+      </select>
+    </div>
+    <div class="hint" id="wayHint">不同情形对应的补偿完全不同，选错会差一倍以上。</div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>还欠你什么（有就填，没有留空）</h2>
+    <div class="grid">
+      <div><label class="f" for="owed">被拖欠 / 克扣的工资合计（元）</label><input id="owed" type="number" inputmode="decimal" placeholder="如最后 2 个月工资"></div>
+      <div><label class="f" for="unsigned">是否签过书面劳动合同</label>
+        <select id="unsigned"><option value="1">签了</option><option value="0">没签</option></select>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:12px">
+      <div><label class="f" for="otW">工作日加班（小时/月）</label><input id="otW" type="number" inputmode="decimal" placeholder="0"></div>
+      <div><label class="f" for="otR">休息日加班（天/月）</label><input id="otR" type="number" inputmode="decimal" placeholder="0"></div>
+      <div><label class="f" for="otH">法定节假日加班（天/月）</label><input id="otH" type="number" inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div><label class="f" for="otMonths">上述加班情况持续的月数</label><input id="otMonths" type="number" inputmode="numeric" placeholder="12"></div>
+      <div><label class="f" for="leave">未休年假天数</label><input id="leave" type="number" inputmode="numeric" placeholder="0">
+        <div class="hint">累计工作满 1 年不满 10 年 5 天 / 满 10 年不满 20 年 10 天 / 满 20 年 15 天（累计工龄含此前单位）</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="ck"><input type="checkbox" id="noSS"><span>公司在职期间没给我缴社保 / 没足额缴<small>这一项仲裁不受理，要去社保经办机构或劳动保障监察投诉——但它能让你「被迫辞职」成立，从而拿到经济补偿</small></span></div>
+      <div class="ck"><input type="checkbox" id="noOtFee"><span>加班没有加班费，也没安排调休</span></div>
+      <div class="ck"><input type="checkbox" id="noContractCopy"><span>公司没给我合同原件 / 工资条<small>举证责任会往公司那边偏一点</small></span></div>
+    </div>
+  </section>
+
+  <section class="noprint">
+    <div class="row"><button class="btn" id="calcBtn">算一遍</button><button class="btn ghost" id="resetBtn">清空重填</button></div>
+    <div class="hint" id="saveHint" style="margin-top:8px">填的内容只存在你自己的浏览器里，关掉再打开还在。</div>
+  </section>
+
+  <div id="result" class="hide">
+    <section>
+      <h2><span class="num">05</span>结果</h2>
+      <div class="sum">
+        <div class="cap">按你填的数据，可主张金额合计（估算）</div>
+        <div class="big" id="total">—</div>
+        <div class="tag" id="totalTag"></div>
+      </div>
+      <div style="margin-top:14px;overflow:auto">
+        <table id="tbl"><thead><tr><th style="width:30%">项目</th><th class="n" style="width:22%">金额</th><th>怎么算的 / 依据</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div id="alerts"></div>
+      <div class="note">金额是「按你填的数据算出的上限估算」，不是仲裁委会裁的金额。真正决定数字的是三件事：工资基数的认定、证据是否够、时效有没有过。任何一项有争议，金额都可能往下走。</div>
+    </section>
+
+    <section>
+      <h2><span class="num">06</span>仲裁请求清单（可直接抄进申请书）</h2>
+      <div class="row noprint" style="margin-bottom:10px"><button class="btn ghost sm" id="copyClaims">复制请求事项</button></div>
+      <pre class="pre" id="claims">先点上面的「算一遍」</pre>
+    </section>
+  </div>
+</div>
+
+<div id="p-proof" class="hide">
+  <section>
+    <h2><span class="num">07</span>证据清单：按你要主张的项目准备</h2>
+    <div class="hint" style="margin-bottom:8px">劳动争议里，考勤记录、工资支付记录这些由公司掌握的证据，公司应当提供；不提供要承担不利后果（《调解仲裁法》第 6 条）。但「你和公司存在劳动关系」这件事，得你先证。</div>
+    <div id="proofList"></div>
+    <div class="note">取证顺序建议：先证明劳动关系（合同/社保/工资流水/工牌/工作群），再证明金额（工资条/银行流水/考勤/加班审批），最后证明离职原因（解除通知/聊天记录/录音）。录音只要不侵犯他人合法权益、不违反法律禁止性规定，可以作为证据。</div>
+  </section>
+
+  <section>
+    <h2><span class="num">08</span>流程与时限</h2>
+    <div class="ck"><input type="checkbox" data-flow="0"><span>确认管辖：劳动合同履行地或公司所在地的劳动人事争议仲裁委员会<small>两地都可以，选对你方便的那个（《调解仲裁法》第 21 条）</small></span></div>
+    <div class="ck"><input type="checkbox" data-flow="1"><span>提交申请书 + 身份证明 + 证据清单及副本<small>按被申请人人数+1 准备份数，多数仲裁委有免费模板</small></span></div>
+    <div class="ck"><input type="checkbox" data-flow="2"><span>等受理：仲裁委 5 日内决定是否受理<small>不受理会出书面通知，可据此去法院起诉</small></span></div>
+    <div class="ck"><input type="checkbox" data-flow="3"><span>开庭：受理后 45 日内结案，复杂案件可延长 15 日<small>《调解仲裁法》第 43 条</small></span></div>
+    <div class="ck"><input type="checkbox" data-flow="4"><span>不服裁决：15 日内向法院起诉<small>终局裁决情形下，劳动者仍可起诉，公司只能申请撤销</small></span></div>
+    <div class="warnbox">时效是这整件事里最容易输的地方：仲裁时效 1 年，从你知道或应当知道权利被侵害之日起算。拖欠劳动报酬的，劳动关系存续期间不受 1 年限制；劳动关系终止的，要在终止之日起 1 年内提出（《调解仲裁法》第 27 条）。</div>
+  </section>
+</div>
+
+<div id="p-doc" class="hide">
+  <section>
+    <h2><span class="num">09</span>仲裁申请书（草稿）</h2>
+    <div class="grid">
+      <div><label class="f" for="nameMe">你的姓名</label><input id="nameMe" placeholder="申请人"></div>
+      <div><label class="f" for="nameCo">公司全称</label><input id="nameCo" placeholder="被申请人（营业执照上的名称）"></div>
+    </div>
+    <div class="row noprint" style="margin:12px 0">
+      <button class="btn" id="genDoc">生成申请书</button>
+      <button class="btn ghost" id="copyDoc">复制全文</button>
+      <button class="btn ghost" id="printDoc">打印 / 存 PDF</button>
+    </div>
+    <pre class="pre" id="docOut">先在上面填好信息，再点「生成申请书」。</pre>
+    <div class="note">这份草稿只做了两件事：把请求写成可受理的条目，把事实按时间顺序摆清楚。它不替你判断胜诉率，也不构成法律意见。金额、身份信息、公司全称请自己核对后再提交。</div>
+  </section>
+</div>
+
+<p class="foot">劳动仲裁算盘 · 单文件本地版<br>数据只存在你自己的浏览器里，不联网、不上传<br>依据《劳动合同法》《劳动法》《劳动争议调解仲裁法》等公开法规整理，非法律意见</p>
+</div>
+
+<div class="bar"><div class="wrap"><button class="btn" id="goCalc">算账</button><button class="btn ghost" id="goProof">备证据</button><button class="btn ghost" id="goDoc">写申请书</button></div></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- 安全存储（微信内嵌 / 隐私模式下 localStorage 会抛错） ---------- */
+var mem={};
+var store={
+  get:function(k){try{var v=localStorage.getItem(k);return v===null?(mem[k]||null):v;}catch(e){return mem[k]||null;}},
+  set:function(k,v){try{localStorage.setItem(k,v);}catch(e){mem[k]=v;}},
+  del:function(k){try{localStorage.removeItem(k);}catch(e){delete mem[k];}}
+};
+var $=function(id){return document.getElementById(id);};
+var KEY="ldzc_apan_v1";
+
+function money(n){
+  if(!isFinite(n)) n=0;
+  var s=Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");
+  return "¥"+s;
+}
+function num(id){var v=parseFloat(($(id).value||"").replace(/,/g,""));return isFinite(v)?v:0;}
+
+/* ---------- 日期与年限 ---------- */
+function parseD(v){ if(!v) return null; var p=v.split("-"); if(p.length!==3) return null; var d=new Date(+p[0],+p[1]-1,+p[2]); return isNaN(d.getTime())?null:d; }
+function todayStr(){ var d=new Date(); var m=("0"+(d.getMonth()+1)).slice(-2); var dd=("0"+d.getDate()).slice(-2); return d.getFullYear()+"-"+m+"-"+dd; }
+
+/* 工作年限：满年 + 余月。>=6个月按1年（计1个月），<6个月按半个月 */
+function seniority(dIn,dOut){
+  if(!dIn||!dOut||dOut<=dIn) return {years:0,months:0,days:0,compMonths:0,text:"—"};
+  var y=dOut.getFullYear()-dIn.getFullYear();
+  var m=dOut.getMonth()-dIn.getMonth();
+  var d=dOut.getDate()-dIn.getDate();
+  if(d<0){ m-=1; var pm=new Date(dOut.getFullYear(),dOut.getMonth(),0).getDate(); d+=pm; }
+  if(m<0){ y-=1; m+=12; }
+  var compMonths=y + (m>=6?1:(m>0?0.5:0));
+  var text=y+" 年 "+(m>0?m+" 个月 ":"")+(d>0?d+" 天":"");
+  return {years:y,months:m,days:d,compMonths:compMonths,text:text.trim()};
+}
+function addMonths(d,n){ var x=new Date(d.getTime()); x.setMonth(x.getMonth()+n); return x; }
+function diffMonths(a,b){ // b-a 的整月数（向下取整）
+  var m=(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth());
+  if(b.getDate()<a.getDate()) m-=1;
+  return m>0?m:0;
+}
+
+/* ---------- 离职情形 → 补偿类型 ---------- */
+var WAY={
+  none:{label:"个人原因辞职",kind:"none",hint:"没有经济补偿。但如果公司欠薪、欠加班费，这两笔照样能主张，而且「欠薪」还能反过来让你改走被迫辞职。"},
+  force:{label:"被迫辞职（第38条）",kind:"N",hint:"公司欠薪、未缴社保、规章制度违法损害权益等情形下你主动解除，仍然有经济补偿——前提是辞职通知里写明理由，事后补写通常不算。"},
+  bargain:{label:"协商一致解除（公司提出）",kind:"N",hint:"由公司提出、协商一致解除的，有经济补偿；如果是你提出来的，一般没有。这一点常被写反。"},
+  fire:{label:"公司单方解除",kind:"2N",hint:"公司拿不出合法理由、或程序违法，属违法解除，可主张赔偿金 2N，也可以要求继续履行合同。"},
+  fire40:{label:"第40条解除（未提前通知）",kind:"N1",hint:"以不胜任、医疗期满、客观情况重大变化为由解除，要提前 30 日书面通知或额外支付 1 个月工资，所以是 N+1。"},
+  discipline:{label:"严重违纪解除",kind:"none",hint:"公司若拿不出制度依据、告知记录和你的确认，这个解除很可能站不住——那就按违法解除 2N 主张。要不要这么打，取决于你手上的证据。"},
+  expire:{label:"合同到期不续签",kind:"N",hint:"公司不续签、或降低条件续签而你不接受，有经济补偿；公司维持或提高条件而你不续，没有。"}
+};
+
+/* ---------- 计算 ---------- */
+var last=null;
+
+function calc(){
+  var dIn=parseD($("dIn").value);
+  var still=$("still").value==="1";
+  var dOut=still?parseD(todayStr()):parseD($("dOut").value);
+  var wage=num("wage");
+  var capY=num("cap");
+  var way=$("way").value;
+  var W=WAY[way]||WAY.none;
+  var rows=[],alerts=[],alertsDanger=[];
+  var total=0;
+
+  if(!dIn||!dOut){ alerts.push("入职或离职日期还没填，年限相关的结果算不出来。"); }
+
+  var sen=seniority(dIn,dOut);
+  var base=wage, capped=false, yearsCap=0;
+  if(capY>0 && wage>capY*3){ base=capY*3; capped=true; yearsCap=12; }
+
+  /* 1. 经济补偿 / 赔偿金 */
+  if(W.kind!=="none"){
+    var cm=sen.compMonths;
+    if(capped && cm>12) cm=12;
+    var amount=0, why="";
+    if(W.kind==="N"){ amount=cm*base; why="工作年限 "+sen.text+"，折算 "+cm+" 个月 × 基数 "+money(base)+"（第 46、47 条）"; }
+    if(W.kind==="N1"){ amount=cm*base+base; why="经济补偿 "+cm+" 个月 + 代通知金 1 个月（第 40、47 条）"; }
+    if(W.kind==="2N"){ amount=cm*base*2; why="违法解除赔偿金 = 经济补偿标准 × 2（第 87 条），年限折算 "+cm+" 个月"; }
+    if(capped) why+="；工资高于社平 3 倍，基数按 "+money(base)+" 封顶、年限最高 12 年";
+    rows.push({k:W.label,amt:amount,why:why});
+    total+=amount;
+    if(W.kind==="discipline") alertsDanger.push("「严重违纪」是公司最常用的解除理由，也是最多被推翻的理由。先看它有没有：制度经过民主程序并公示、制度里写明这一条、有你签收或培训记录、有对应的事实证据。缺一样，你就该按 2N 主张。");
+  } else {
+    rows.push({k:"经济补偿",amt:0,why:W.hint});
+  }
+
+  /* 2. 拖欠工资 */
+  var owed=num("owed");
+  if(owed>0){
+    rows.push({k:"被拖欠 / 克扣工资",amt:owed,why:"按你填的金额；这笔是「本来该发没发」，不属于补偿，另行主张（《劳动法》第 50 条）"});
+    total+=owed;
+    alerts.push("欠薪还可以另外走劳动保障监察投诉：经责令限期支付仍不付的，可要求加付 50%–100% 赔偿金（《劳动合同法》第 85 条）。这条路和仲裁可以同时走。");
+  }
+
+  /* 3. 未签书面合同二倍工资差额 */
+  if($("unsigned").value==="0" && dIn && dOut){
+    var monthsEmp=diffMonths(dIn,dOut);
+    var claim=Math.min(11,Math.max(0,monthsEmp-1));
+    if(claim>0){
+      var amt2=claim*wage;
+      rows.push({k:"未签书面合同二倍工资差额",amt:amt2,why:"自用工满 1 个月的次日起算，最多 11 个月 × "+money(wage)+"（第 82 条）；本次按 "+claim+" 个月计"});
+      total+=amt2;
+      alerts.push("二倍工资的时效是按月分别起算的，多数地区只支持最近 12 个月那部分。你在这家公司的时间越长，能要回来的比例越低——别拖。");
+    }
+  }
+
+  /* 4. 加班费 */
+  var hW=num("otW"), dR=num("otR"), dH=num("otH"), mOt=Math.max(1,num("otMonths")||12);
+  if((hW>0||dR>0||dH>0) && wage>0){
+    var hourly=wage/21.75/8, daily=wage/21.75;
+    var otW=hW*1.5*hourly*mOt;
+    var otR=dR*2*daily*mOt;
+    var otH=dH*3*daily*mOt;
+    var otAll=otW+otR+otH;
+    rows.push({k:"加班费",amt:otAll,why:"工作日 "+hW+"h ×1.5 + 休息日 "+dR+"天 ×2 + 节假日 "+dH+"天 ×3，按月薪 "+money(wage)+" ÷21.75÷8 折时薪，计 "+mOt+" 个月（《劳动法》第 44 条）"});
+    total+=otAll;
+    alertsDanger.push("加班费是这类案子里最难拿到的一项：举证责任虽然在公司（考勤由公司掌握），但你要先拿出「存在加班」的初步证据——排班表、打卡截图、加班审批、下班后的工作消息。什么都没有，这一项大概率归零。");
+  }
+
+  /* 5. 未休年假 */
+  var lv=num("leave");
+  if(lv>0 && wage>0){
+    var amtL=lv*(wage/21.75)*2;
+    rows.push({k:"未休年假工资（另付 200%）",amt:amtL,why:lv+" 天 × 日工资 × 200%（300% 里已含正常工资，另付的是 2 倍部分；《职工带薪年休假条例》第 5 条）"});
+    total+=amtL;
+  }
+
+  /* 6. 社保 */
+  if($("noSS").checked){
+    rows.push({k:"社保未缴 / 未足额缴",amt:0,why:"不属于仲裁受理范围，向社保经办机构或劳动保障监察投诉（可拨 12333）"});
+    if(W.kind!=="force") alerts.push("如果公司确实没给你缴社保，你可以据此主张「被迫辞职」，把补偿从 0 变成 N。关键是辞职通知里要写明「因公司未依法缴纳社会保险解除劳动合同」。");
+  }
+
+  /* 时效 */
+  if(dOut && !still){
+    var deadline=addMonths(dOut,12);
+    var left=Math.round((deadline-new Date())/86400000);
+    if(left<0) alertsDanger.push("按你填的离职日期，仲裁时效已经过了（离职后 1 年）。欠薪在劳动关系存续期间不受 1 年限制，但离职后同样受 1 年限制——这一条几乎没有例外。");
+    else alerts.push("时效：离职后 1 年内提出（" + fmtD(deadline) + " 前），还剩约 "+left+" 天。");
+  }
+
+  last={rows:rows,total:total,sen:sen,base:base,dIn:dIn,dOut:dOut,way:W,wayKey:way,still:still};
+
+  $("total").textContent=money(total);
+  var tagParts=[];
+  tagParts.push("工作年限 "+sen.text);
+  tagParts.push("基数 "+money(base)+(capped?"（已按社平 3 倍封顶）":""));
+  if($("still").value==="1") tagParts.push("仍在职，按今天计算");
+  $("totalTag").textContent=tagParts.join(" · ");
+
+  var tb=$("tbl").querySelector("tbody");
+  tb.innerHTML="";
+  rows.forEach(function(r){
+    var tr=document.createElement("tr");
+    var td1=document.createElement("td"); td1.textContent=r.k;
+    var td2=document.createElement("td"); td2.className="n"; td2.textContent=r.amt>0?money(r.amt):"—";
+    var td3=document.createElement("td"); td3.textContent=r.why;
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+    tb.appendChild(tr);
+  });
+
+  var box=$("alerts"); box.innerHTML="";
+  alertsDanger.forEach(function(t){ var d=document.createElement("div"); d.className="dangerbox"; d.textContent=t; box.appendChild(d); });
+  alerts.forEach(function(t){ var d=document.createElement("div"); d.className="warnbox"; d.textContent=t; box.appendChild(d); });
+
+  $("result").classList.remove("hide");
+  buildClaims();
+  save();
+}
+
+function fmtD(d){ var m=("0"+(d.getMonth()+1)).slice(-2); var dd=("0"+d.getDate()).slice(-2); return d.getFullYear()+"-"+m+"-"+dd; }
+
+/* ---------- 请求事项 ---------- */
+function buildClaims(){
+  if(!last) return;
+  var L=[],n=1;
+  last.rows.forEach(function(r){
+    if(r.amt>0){
+      L.push(n+". 请求裁决被申请人支付"+r.k+"，计 "+money(r.amt)+"；");
+      n++;
+    }
+  });
+  if(!L.length){ L.push("（按你填的数据，暂无可以量化的请求项。如果你认为公司确实欠你钱，先把证据和时间线整理出来。）"); }
+  L.push(n+". 请求裁决被申请人承担本案仲裁费用。");
+  $("claims").textContent="请求事项：\n\n"+L.join("\n");
+}
+
+/* ---------- 证据清单 ---------- */
+var PROOF=[
+  ["证明劳动关系（这一步不做，后面全部免谈）",[
+    ["书面劳动合同（或入职登记表、录用通知）","没有合同也不致命：工牌、工位照、工作群、邮件签名都能顶"],
+    ["近 6–12 个月工资银行流水","看付款方是不是公司账户、备注有没有「工资」"],
+    ["社保 / 公积金缴纳记录","「随申办 / 浙里办 / 粤省事」等政务 App 都能直接导出"],
+    ["考勤记录、排班表、打卡截图","由公司掌握，可要求其提供"],
+    ["工作沟通记录（微信、钉钉、企业微信、邮件）","保留原始载体，别只截一张图"]
+  ]],
+  ["证明金额（决定你能要多少）",[
+    ["工资条 / 薪酬明细（含绩效、奖金、补贴）","用来证明「应发工资」，不是基本工资"],
+    ["加班审批单、下班后的工作消息时间戳","加班费的关键初步证据"],
+    ["提成 / 奖金制度、考核结果","口头承诺也要有聊天记录佐证"],
+    ["年假申请与审批记录","没休成的年假，要么有申请被拒，要么根本没有申请入口"]
+  ]],
+  ["证明离职原因（决定有没有补偿、是 N 还是 2N）",[
+    ["解除劳动合同通知书 / 辞退邮件","注意看上面写的理由，日后公司只能围绕这个理由举证"],
+    ["被迫辞职的书面通知（写明第 38 条理由）","这一条最容易被忽略：辞职信写「个人原因」，补偿基本就没了"],
+    ["协商解除协议","签之前看清有没有「双方再无任何争议」这类概括放弃条款"],
+    ["录音（谈话、电话）","自己参与的对话录音，通常可以作为证据"]
+  ]]
+];
+(function(){
+  var box=$("proofList");
+  PROOF.forEach(function(g){
+    var h=document.createElement("div");
+    h.style.margin="14px 0 4px"; h.style.fontSize="13.5px"; h.style.color="#5d5a52"; h.style.fontWeight="600";
+    h.textContent=g[0];
+    box.appendChild(h);
+    g[1].forEach(function(it,i){
+      var d=document.createElement("label"); d.className="ck";
+      var cb=document.createElement("input"); cb.type="checkbox"; cb.setAttribute("data-proof",g[0].slice(0,4)+i);
+      var sp=document.createElement("span"); sp.textContent=it[0];
+      var sm=document.createElement("small"); sm.textContent=it[1]; sp.appendChild(sm);
+      d.appendChild(cb); d.appendChild(sp); box.appendChild(d);
+    });
+  });
+})();
+
+/* ---------- 申请书 ---------- */
+function genDoc(){
+  if(!last){ alert("先在「算账」里算一遍"); return; }
+  var me=$("nameMe").value.trim()||"（申请人姓名）";
+  var co=$("nameCo").value.trim()||"（被申请人公司全称）";
+  var claims=$("claims").textContent.replace(/^请求事项：\s*/,"").trim();
+  var sen=last.sen;
+  var head=
+"劳动人事争议仲裁申请书\n\n"+
+"申请人："+me+"\n"+
+"被申请人："+co+"\n"+
+"（地址、法定代表人、联系电话请按营业执照与实际情况补全）\n\n"+
+"仲裁请求\n\n"+claims+"\n\n"+
+"事实与理由\n\n";
+  var body="";
+  body+="一、劳动关系存续情况。申请人于 "+fmtD(last.dIn)+" 入职被申请人处，任（岗位），"+(last.still?"目前仍在职":"于 "+fmtD(last.dOut)+" 离职")+"，工作年限 "+sen.text+"。\n\n";
+  body+="二、工资标准。申请人在离职前十二个月的平均应发工资为每月 "+money(last.base)+"，有工资条与银行流水为证。\n\n";
+  body+="三、离职经过。";
+  var w=last.way;
+  var wayText={
+    none:"申请人因个人原因提出辞职。",
+    force:"因被申请人未依法足额支付劳动报酬（未依法缴纳社会保险费），申请人依据《劳动合同法》第三十八条解除劳动合同。",
+    bargain:"双方经协商一致解除劳动合同，解除由被申请人提出。",
+    fire:"被申请人单方解除劳动合同，未说明合法理由，亦未履行法定程序。",
+    fire40:"被申请人以（不胜任工作 / 客观情况发生重大变化）为由解除劳动合同，未提前三十日书面通知，亦未额外支付一个月工资。",
+    discipline:"被申请人以「严重违纪」为由解除劳动合同，但未提供经民主程序制定并公示的规章制度，亦无申请人确认的违纪事实。",
+    expire:"劳动合同期满，被申请人不同意续订（或降低原条件续订），双方劳动关系终止。"
+  };
+  body+=wayText[last.wayKey]+"\n\n";
+  body+="四、各项请求的依据。\n";
+  last.rows.forEach(function(r){
+    if(r.amt>0){ body+="· "+r.k+"："+r.why+"。\n"; }
+  });
+  body+="\n五、申请人的请求均未超过《劳动争议调解仲裁法》第二十七条规定的一年仲裁时效。\n\n";
+  body+="综上，申请人的仲裁请求事实清楚、依据充分，恳请贵委依法裁决。\n\n";
+  body+="此致\n\n（劳动合同履行地 / 被申请人所在地）劳动人事争议仲裁委员会\n\n";
+  body+="申请人（签名）：\n"+fmtD(new Date())+"\n\n";
+  body+="附：1. 本申请书副本  份；2. 证据清单及证据材料  份；3. 申请人身份证明复印件 1 份。\n";
+  $("docOut").textContent=head+body;
+}
+
+/* ---------- 交互 ---------- */
+$("calcBtn").addEventListener("click",calc);
+$("goCalc").addEventListener("click",function(){showTab("calc");window.scrollTo({top:0,behavior:"smooth"});});
+$("goProof").addEventListener("click",function(){showTab("proof");window.scrollTo({top:0,behavior:"smooth"});});
+$("goDoc").addEventListener("click",function(){showTab("doc");window.scrollTo({top:0,behavior:"smooth"});});
+
+function showTab(p){
+  ["calc","proof","doc"].forEach(function(k){
+    $("p-"+k).classList.toggle("hide",k!==p);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+    t.classList.toggle("on",t.getAttribute("data-p")===p);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".bar .btn"),function(b,i){
+    var map=["goCalc","goProof","goDoc"];
+    b.classList.toggle("ghost",map[i]!==("go"+p.charAt(0).toUpperCase()+p.slice(1)));
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+  t.addEventListener("click",function(){showTab(t.getAttribute("data-p"));});
+});
+
+$("way").addEventListener("change",function(){
+  var w=WAY[this.value]||WAY.none;
+  $("wayHint").textContent=w.hint;
+});
+
+$("resetBtn").addEventListener("click",function(){
+  if(!confirm("清空所有填写内容？")) return;
+  store.del(KEY);
+  ["dIn","dOut","wage","cap","owed","otW","otR","otH","otMonths","leave","nameMe","nameCo"].forEach(function(id){$(id).value="";});
+  $("still").value="0"; $("way").value="none"; $("unsigned").value="1";
+  $("noSS").checked=false; $("noOtFee").checked=false; $("noContractCopy").checked=false;
+  $("result").classList.add("hide");
+  $("claims").textContent="先点上面的「算一遍」";
+  $("docOut").textContent="先在上面填好信息，再点「生成申请书」。";
+});
+
+function copyText(t,btn){
+  var done=function(){ var o=btn.textContent; btn.textContent="已复制"; setTimeout(function(){btn.textContent=o;},1200); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done,function(){fallback(t,done);});
+  } else { fallback(t,done); }
+}
+function fallback(t,done){
+  try{
+    var ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done();
+  }catch(e){ alert("复制失败，请手动选中文字复制"); }
+}
+$("copyClaims").addEventListener("click",function(){copyText($("claims").textContent,this);});
+$("copyDoc").addEventListener("click",function(){copyText($("docOut").textContent,this);});
+$("printDoc").addEventListener("click",function(){window.print();});
+$("genDoc").addEventListener("click",genDoc);
+
+/* ---------- 存 / 取 ---------- */
+var FIELDS=["dIn","dOut","still","wage","cap","way","owed","unsigned","otW","otR","otH","otMonths","leave","nameMe","nameCo"];
+function save(){
+  var o={};
+  FIELDS.forEach(function(id){ o[id]=$(id).value; });
+  o.noSS=$("noSS").checked?1:0;
+  o.noOtFee=$("noOtFee").checked?1:0;
+  o.noContractCopy=$("noContractCopy").checked?1:0;
+  try{ store.set(KEY,JSON.stringify(o)); }catch(e){}
+}
+function load(){
+  var raw=store.get(KEY); if(!raw) { $("wayHint").textContent=(WAY.none).hint; return; }
+  var o; try{ o=JSON.parse(raw); }catch(e){ return; }
+  FIELDS.forEach(function(id){ if(o[id]!==undefined) $(id).value=o[id]; });
+  $("noSS").checked=!!o.noSS; $("noOtFee").checked=!!o.noOtFee; $("noContractCopy").checked=!!o.noContractCopy;
+  var w=WAY[$("way").value]||WAY.none; $("wayHint").textContent=w.hint;
+}
+["dIn","dOut","wage","cap","way","owed","unsigned","otW","otR","otH","otMonths","leave","still"].forEach(function(id){
+  $(id).addEventListener("change",save);
+});
+
+load();
+if($("wage").value && $("dIn").value) calc();
+})();
+</script>
+</body>
+</html>

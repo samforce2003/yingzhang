@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>押金体检 · 退租前十分钟，算清你能拿回多少</title>
+<meta name="description" content="输入合同条款和房屋现状，给出押金可回收区间、逐条风险、取证清单，并生成退租交接单与押金催告函。纯本地运行，不上传任何数据。">
+<style>
+:root{
+  --bg:#f6f5f1;
+  --surface:#fffefb;
+  --ink:#1b1a17;
+  --ink2:#5d5a52;
+  --ink3:#8d8a80;
+  --line:#e2dfd6;
+  --line2:#cfcbc0;
+  --safe:#2f6b4f;
+  --warn:#8a5a12;
+  --risk:#8f2f24;
+  --accent:#24405c;
+  --r:10px;
+  --shadow:0 1px 2px rgba(27,26,23,.05),0 6px 18px rgba(27,26,23,.04);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;
+  min-height:100dvh;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+header{padding:22px 0 14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+h1{font-size:21px;line-height:1.35;margin:0 0 6px;letter-spacing:-.2px}
+.sub{color:var(--ink2);font-size:13.5px;margin:0}
+.badge{display:inline-block;font-size:11.5px;color:var(--ink2);border:1px solid var(--line2);
+  border-radius:4px;padding:1px 6px;margin-right:6px;vertical-align:1px;letter-spacing:.2px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+h2{font-size:15.5px;margin:0 0 4px;letter-spacing:-.1px}
+h2 .n{color:var(--ink3);font-weight:400;margin-right:6px;font-variant-numeric:tabular-nums}
+.hint{color:var(--ink3);font-size:12.5px;margin:0 0 14px;line-height:1.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.grid.one{grid-template-columns:1fr}
+@media(max-width:430px){.grid{grid-template-columns:1fr}}
+label.f{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+input[type=number],input[type=text],input[type=date],select,textarea{
+  width:100%;font:inherit;font-size:14px;color:var(--ink);background:#fbfaf6;
+  border:1px solid var(--line2);border-radius:7px;padding:9px 10px;outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+textarea{min-height:88px;resize:vertical;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.chip{font-size:12.5px;border:1px solid var(--line2);background:#fbfaf6;color:var(--ink2);
+  border-radius:6px;padding:6px 10px;cursor:pointer;user-select:none;line-height:1.3}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.rows{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 2px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:13.5px}
+.row .t small{display:block;color:var(--ink3);font-size:11.5px;line-height:1.45}
+.seg{display:flex;gap:0;border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:0 0 auto}
+.seg button{font:inherit;font-size:12px;border:0;background:#fbfaf6;color:var(--ink2);
+  padding:7px 9px;cursor:pointer;border-right:1px solid var(--line2);line-height:1.2}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.bar{position:sticky;bottom:0;background:rgba(246,245,241,.94);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:20}
+.btn{font:inherit;font-size:14.5px;font-weight:600;border-radius:8px;padding:12px 18px;
+  border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;width:100%}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.sm{width:auto;padding:8px 13px;font-size:13px;border-radius:7px;font-weight:500}
+.btn:active{transform:translateY(1px)}
+.res{display:none}
+.res.on{display:block}
+.score{display:flex;align-items:baseline;gap:10px;margin:2px 0 6px}
+.score b{font-size:38px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.score span{font-size:13px;color:var(--ink2)}
+.money{font-size:15px;margin:10px 0 2px}
+.money b{font-variant-numeric:tabular-nums}
+ul.fx{margin:8px 0 0;padding-left:0;list-style:none}
+ul.fx li{position:relative;padding:9px 0 9px 22px;border-bottom:1px solid var(--line);font-size:13.5px}
+ul.fx li:last-child{border-bottom:0}
+ul.fx li:before{content:"";position:absolute;left:4px;top:17px;width:5px;height:5px;
+  border-radius:50%;background:var(--ink3)}
+ul.fx li.r:before{background:var(--risk)}
+ul.fx li.w:before{background:var(--warn)}
+ul.fx li.s:before{background:var(--safe)}
+ul.fx li em{font-style:normal;color:var(--ink3);font-size:12px;display:block;margin-top:2px}
+.tag{display:inline-block;font-size:11px;padding:0 5px;border-radius:3px;margin-right:5px;
+  border:1px solid currentColor;vertical-align:1px}
+.tag.r{color:var(--risk)}.tag.w{color:var(--warn)}.tag.s{color:var(--safe)}
+.pre{white-space:pre-wrap;font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12.5px;
+  line-height:1.7;background:#fbfaf6;border:1px solid var(--line);border-radius:8px;
+  padding:12px;max-height:340px;overflow:auto}
+.tabs{display:flex;gap:0;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.tabs button{font:inherit;font-size:14px;background:none;border:0;color:var(--ink3);
+  padding:10px 4px;margin-right:20px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:12px;
+  border-top:1px dashed var(--line2);padding-top:10px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ck{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.ck:last-child{border-bottom:0}
+.ck input{margin:3px 0 0;width:16px;height:16px;flex:0 0 auto;accent-color:var(--accent)}
+.ck span small{display:block;color:var(--ink3);font-size:11.5px;line-height:1.5}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px;margin:0}
+.kv dt{color:var(--ink3)}
+.kv dd{margin:0;font-variant-numeric:tabular-nums}
+.foot{color:var(--ink3);font-size:11.5px;text-align:center;padding:18px 0 30px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>退租前十分钟，算清你能拿回多少押金</h1>
+  <p class="sub"><span class="badge">本地运行</span><span class="badge">不上传</span><span class="badge">可打印</span>
+  合同条款 + 房屋现状 → 可回收区间、逐条风险、取证清单、交接单与催告函。</p>
+</header>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="t1">体检</button>
+  <button role="tab" aria-selected="false" data-tab="t2">取证</button>
+  <button role="tab" aria-selected="false" data-tab="t3">文书</button>
+</div>
+
+<!-- ============ 体检 ============ -->
+<div class="pane on" id="t1">
+<section>
+  <h2><span class="n">01</span>房子与合同</h2>
+  <p class="hint">数字都按“你实际转账的金额”填。押金含不含水电押金、是否一次性付清，会影响判断。</p>
+  <div class="grid">
+    <div><label class="f" for="rent">月租金（元）</label><input id="rent" type="number" inputmode="numeric" min="0" step="50" placeholder="3500" value="3500"></div>
+    <div><label class="f" for="dep">押金（元）</label><input id="dep" type="number" inputmode="numeric" min="0" step="50" placeholder="3500" value="3500"></div>
+    <div><label class="f" for="city">城市</label><input id="city" type="text" placeholder="杭州" value=""></div>
+    <div><label class="f" for="src">房源类型</label>
+      <select id="src">
+        <option value="person">个人房东直租</option>
+        <option value="agency">中介 / 二房东</option>
+        <option value="long">长租公寓 / 品牌公寓</option>
+      </select>
+    </div>
+    <div><label class="f" for="months">已住月数</label><input id="months" type="number" inputmode="numeric" min="0" step="1" value="12"></div>
+    <div><label class="f" for="left">合同剩余月数</label><input id="left" type="number" inputmode="numeric" min="0" step="1" value="0"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>合同里有没有这几句</h2>
+  <p class="hint">只勾你合同里真实写着的。这六句是押金纠纷里最常见的“扣钱依据”，勾上会直接拉低你的可回收区间。</p>
+  <div id="clauses" class="rows"></div>
+  <label class="f" style="margin-top:14px">或者，把合同里的押金/退租条款粘进来（可选，自动找关键词）</label>
+  <textarea id="contract" placeholder="例如：租赁期满，乙方应将房屋恢复原状，自然损耗由乙方承担。押金于退租后30个工作日内无息退还……"></textarea>
+  <div class="tools"><button class="btn ghost sm" id="scan">扫描这段条款</button><span id="scanOut" class="hint" style="margin:8px 0 0"></span></div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>现在的房子，逐项过一遍</h2>
+  <p class="hint">按最接近的选项点。选完立刻出结果，不用点“提交”。</p>
+  <div class="rows">
+    <div class="row"><div class="t">墙面<small>钉孔、污渍、涂鸦、发霉</small></div>
+      <div class="seg" data-k="wall"><button data-v="0">完好</button><button data-v="1">轻微</button><button data-v="2">明显</button></div></div>
+    <div class="row"><div class="t">地面<small>划痕、起翘、破损</small></div>
+      <div class="seg" data-k="floor"><button data-v="0">完好</button><button data-v="1">轻微</button><button data-v="2">明显</button></div></div>
+    <div class="row"><div class="t">家具家电<small>缺件、坏件、正常磨损</small></div>
+      <div class="seg" data-k="furn"><button data-v="0">完好</button><button data-v="1">磨损</button><button data-v="2">损坏</button></div></div>
+    <div class="row"><div class="t">保洁<small>退租当天是否已彻底打扫</small></div>
+      <div class="seg" data-k="clean"><button data-v="0">已打扫</button><button data-v="1">一般</button><button data-v="2">未打扫</button></div></div>
+    <div class="row"><div class="t">钥匙 / 门禁卡<small>是否齐全</small></div>
+      <div class="seg" data-k="key"><button data-v="0">齐全</button><button data-v="1">缺 1</button><button data-v="2">缺多</button></div></div>
+    <div class="row"><div class="t">水电燃气<small>是否已结清并拍照留底</small></div>
+      <div class="seg" data-k="util"><button data-v="0">已结清</button><button data-v="1">未拍表</button><button data-v="2">有欠费</button></div></div>
+  </div>
+  <div class="rows" style="margin-top:10px">
+    <label class="ck"><input type="checkbox" id="h_contract"><span>我手上<strong>有</strong>书面/电子合同原件
+      <small>没有合同，很多主张会变成各说各话</small></span></label>
+    <label class="ck"><input type="checkbox" id="h_movein"><span>我有<strong>入住时</strong>的房屋照片或视频
+      <small>这是证明“原来就是这样”的唯一硬证据</small></span></label>
+    <label class="ck"><input type="checkbox" id="h_handover"><span>退租时双方<strong>当面</strong>验房并签了交接单
+      <small>没签字 = 对方可以事后追加扣款</small></span></label>
+  </div>
+</section>
+
+<section class="res" id="resBox">
+  <h2><span class="n">04</span>体检结果</h2>
+  <div class="score"><b id="sc">--</b><span id="scTxt"></span></div>
+  <p class="money">可回收押金：<b id="lo">--</b> ~ <b id="hi">--</b> 元（押金共 <b id="depTxt">--</b> 元）</p>
+  <p class="hint" id="verdict" style="margin-bottom:6px"></p>
+  <ul class="fx" id="fx"></ul>
+  <div class="note">区间是“按常见司法实践与市场价推算的参考值”，不是承诺。实际结果取决于合同文字、证据完整度、以及你愿不愿意走投诉/诉讼这一步。
+  依据：《民法典》第七百一十条（按约定使用）、第七百一十三条（维修义务）、第七百三十三条（期满返还）、第七百三十四条（续租）；押金本身无专门法条，通常按合同约定与不当得利处理。</div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>退租当天，按这个顺序做</h2>
+  <div class="rows" id="steps"></div>
+</section>
+</div>
+
+<!-- ============ 取证 ============ -->
+<div class="pane" id="t2">
+<section>
+  <h2>拍照清单：证明“交房时是什么样”</h2>
+  <p class="hint">纠纷里输的一方，几乎都是“只有自己的说法，没有当时的画面”。下面每一项都要拍到，
+  拍的时候打开手机的水印相机（带时间地点），或者把当天的报纸/手机时间一起拍进去。</p>
+  <div class="rows" id="shots"></div>
+  <div class="tools">
+    <button class="btn ghost sm" id="copyShots">复制清单</button>
+    <button class="btn ghost sm" id="dlShots">下载 .txt</button>
+  </div>
+</section>
+<section>
+  <h2>验房时一定要拿到的三样东西</h2>
+  <ul class="fx">
+    <li class="s">交接单上写明“房屋及设施无损坏、水电燃气已结清”<em>没有这句话，等于给对方留了“事后追加扣款”的口子</em></li>
+    <li class="s">押金退还的<strong>明确日期和账户</strong>写在交接单或微信里<em>“尽快退”“下周退”在投诉时不算约定</em></li>
+    <li class="s">对方签字的原件照片（或让他在微信里回一句“确认”）<em>电子确认同样有效，关键是“他说的”要留下痕迹</em></li>
+  </ul>
+</section>
+</div>
+
+<!-- ============ 文书 ============ -->
+<div class="pane" id="t3">
+<section>
+  <h2>一、退租交接确认单</h2>
+  <p class="hint">打印两份，双方各持一份。手写填空也可以，关键是“双方签字 + 日期 + 押金金额与退还日期”。</p>
+  <textarea id="addr" placeholder="房屋地址（写到门牌号）" style="min-height:52px"></textarea>
+  <div class="grid" style="margin-top:10px">
+    <div><label class="f" for="landlord">出租方（姓名）</label><input id="landlord" type="text" placeholder="张三"></div>
+    <div><label class="f" for="tenant">承租方（姓名）</label><input id="tenant" type="text" placeholder="李四"></div>
+    <div><label class="f" for="d1">交房日期</label><input id="d1" type="date"></div>
+    <div><label class="f" for="d2">押金应退日期</label><input id="d2" type="date"></div>
+  </div>
+  <div class="tools">
+    <button class="btn ghost sm" id="genHand">生成交接单</button>
+    <button class="btn ghost sm" id="copyHand">复制</button>
+  </div>
+  <pre class="pre" id="handOut" style="margin-top:12px">点上面“生成交接单”</pre>
+</section>
+
+<section>
+  <h2>二、押金退还催告函</h2>
+  <p class="hint">对方拖着不退时用。先微信发文字版（留痕），再打印寄出或用 EMS（保留下单记录）。
+  内容只陈述事实和法条，不要写情绪，情绪在投诉和起诉时没有用。</p>
+  <div class="grid">
+    <div><label class="f" for="days">给几天期限</label>
+      <select id="days"><option value="7">7 天</option><option value="15">15 天</option><option value="3">3 天</option></select></div>
+    <div><label class="f" for="owed">对方主张扣多少钱</label><input id="owed" type="number" inputmode="numeric" value="0" step="50"></div>
+  </div>
+  <textarea id="reason" placeholder="对方给的理由（原话，例如：墙面有钉孔要补漆、油烟机太脏要清洗费 300）" style="margin-top:10px;min-height:70px"></textarea>
+  <div class="tools">
+    <button class="btn ghost sm" id="genLetter">生成催告函</button>
+    <button class="btn ghost sm" id="copyLetter">复制</button>
+    <button class="btn ghost sm" id="printAll">打印 / 存 PDF</button>
+  </div>
+  <pre class="pre" id="letterOut" style="margin-top:12px">点上面“生成催告函”</pre>
+  <div class="note">不是法律意见。金额较大或对方明确拒退时，走：12345（属地住建/房管）→ 街道调解 → 法院小额诉讼（标的小、可自行起诉，不必请律师）。
+  手上有合同、入住照片、交接单三样，胜诉概率会明显不同。</div>
+</section>
+
+<section>
+  <h2>三、12345 / 住建部门投诉信</h2>
+  <p class="hint">催告没用、对方拖着不退时用。12345 与属地住建局受理后一般会在 15 个工作日内答复。
+  投诉信只写“谁、什么事、要什么”，不写情绪——情绪在受理环节不加分，事实和凭证才加分。</p>
+  <div class="grid">
+    <div><label class="f" for="dept">投给谁</label>
+      <select id="dept">
+        <option value="住建">属地住房和城乡建设局（租赁监管）</option>
+        <option value="12345">12345 政务服务便民热线</option>
+        <option value="市场">市场监督管理局（中介违规收费）</option>
+      </select></div>
+    <div><label class="f" for="phone">你的联系电话</label><input id="phone" type="tel" placeholder="选填，受理后会回拨"></div>
+  </div>
+  <div class="tools">
+    <button class="btn ghost sm" id="genComplaint">生成投诉信</button>
+    <button class="btn ghost sm" id="copyComplaint">复制</button>
+  </div>
+  <pre class="pre" id="complaintOut" style="margin-top:12px">点上面“生成投诉信”</pre>
+  <div class="note">提交渠道：12345 热线 / 支付宝「市民中心」/ 微信「12345」小程序 / 属地住建局官网住房租赁投诉入口。
+  投诉信是通用模板，不是法律文书，也不构成法律意见。</div>
+</section>
+</div>
+
+<p class="foot">押金体检 · 单文件本地版<br>数据只存在你自己的浏览器里，不联网、不上传<br>依据公开法规与常见司法实践整理，非法律意见</p>
+</div>
+
+<div class="bar"><div class="wrap"><button class="btn" id="see">看体检结果</button></div></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- 安全存储（微信内嵌 / 隐私模式下 localStorage 会抛错） ---------- */
+var mem={};
+var store={
+  get:function(k){try{var v=localStorage.getItem(k);return v===null?(mem[k]||null):v;}catch(e){return mem[k]||null;}},
+  set:function(k,v){try{localStorage.setItem(k,v);}catch(e){mem[k]=v;}},
+  del:function(k){try{localStorage.removeItem(k);}catch(e){delete mem[k];}}
+};
+var $=function(id){return document.getElementById(id);};
+var fmt=function(n){return (Math.round(n)).toLocaleString('zh-CN');};
+
+/* ---------- 合同常见条款 ---------- */
+var CLAUSES=[
+  {k:'natural',t:'“自然损耗由承租人承担 / 恢复原状”',s:'正常使用的磨损本不该由租客赔，这句话是把责任整体推给你',w:1},
+  {k:'delay30',t:'押金在“退租后 30 个工作日内”退还',s:'30 个工作日≈6 周。拖到你自己放弃，是最省事的扣钱方式',w:1},
+  {k:'cleanfee',t:'“退租需支付保洁费/清洁费”固定金额',s:'固定收费与房屋实际脏污无关，属于变相扣款',w:1},
+  {k:'noreturn',t:'“提前退租押金不退”',s:'押金是担保不是违约金，全扣通常超出合理范围',w:1},
+  {k:'repair',t:'“维修费用从押金中扣除”（未约定上限）',s:'没有上限 = 可以扣到零。要争的是“上限”和“凭证”',w:1},
+  {k:'anyloss',t:'“押金可抵扣任何损失/费用”',s:'兜底条款，让扣款不需要理由',w:1}
+];
+var state={clause:{},seg:{wall:0,floor:0,furn:0,clean:0,key:0,util:0},h:{}};
+
+/* ---------- 渲染条款 ---------- */
+(function(){
+  var box=$('clauses');
+  CLAUSES.forEach(function(c){
+    var l=document.createElement('label');l.className='ck';
+    l.innerHTML='<input type="checkbox" data-c="'+c.k+'"><span>'+c.t+'<small>'+c.s+'</small></span>';
+    box.appendChild(l);
+  });
+  box.addEventListener('change',function(e){
+    var c=e.target.getAttribute('data-c');
+    if(!c)return;
+    state.clause[c]=e.target.checked;save();calc();
+  });
+})();
+
+/* ---------- 分段按钮 ---------- */
+document.querySelectorAll('.seg').forEach(function(seg){
+  var k=seg.getAttribute('data-k');
+  seg.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(x){x.setAttribute('aria-pressed','false');});
+    b.setAttribute('aria-pressed','true');
+    state.seg[k]=+b.getAttribute('data-v');save();calc();
+  });
+  Array.prototype.forEach.call(seg.querySelectorAll('button'),function(x,i){if(i===0)x.setAttribute('aria-pressed','true');});
+});
+
+/* ---------- 输入 ---------- */
+['rent','dep','city','src','months','left','contract','addr','landlord','tenant','d1','d2','reason','owed','days'].forEach(function(id){
+  var el=$(id);if(!el)return;
+  el.addEventListener('input',function(){save();if(['rent','dep','src','months','left'].indexOf(id)>=0)calc();});
+  el.addEventListener('change',function(){save();if(['rent','dep','src','months','left'].indexOf(id)>=0)calc();});
+});
+['h_contract','h_movein','h_handover'].forEach(function(id){
+  var el=$(id);el.addEventListener('change',function(){state.h[id]=el.checked;save();calc();});
+});
+
+/* ---------- 存草稿 ---------- */
+function save(){
+  var d={clause:state.clause,seg:state.seg,h:state.h,v:{}};
+  ['rent','dep','city','src','months','left','contract','addr','landlord','tenant','d1','d2','reason','owed','days'].forEach(function(id){
+    var el=$(id);if(el)d.v[id]=el.value;
+  });
+  store.set('yajin.v1',JSON.stringify(d));
+}
+function load(){
+  var raw=store.get('yajin.v1');if(!raw)return;
+  var d;try{d=JSON.parse(raw);}catch(e){return;}
+  if(!d||!d.v)return;
+  Object.keys(d.v).forEach(function(id){var el=$(id);if(el&&d.v[id]!=null)el.value=d.v[id];});
+  state.clause=d.clause||{};state.seg=d.seg||state.seg;state.h=d.h||{};
+  Object.keys(state.clause).forEach(function(k){
+    var el=document.querySelector('[data-c="'+k+'"]');if(el)el.checked=!!state.clause[k];
+  });
+  Object.keys(state.h).forEach(function(k){var el=$(k);if(el)el.checked=!!state.h[k];});
+  Object.keys(state.seg).forEach(function(k){
+    var seg=document.querySelector('.seg[data-k="'+k+'"]');if(!seg)return;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){
+      b.setAttribute('aria-pressed',String(+b.getAttribute('data-v')===state.seg[k]));
+    });
+  });
+}
+
+/* ---------- 核心：算账 ---------- */
+function calc(){
+  var rent=+$('rent').value||0, dep=+$('dep').value||0;
+  var src=$('src').value, months=+$('months').value||0, left=+$('left').value||0;
+  var s=state.seg, c=state.clause;
+
+  /* 1. 扣款估算（市场价口径，宁可估高） */
+  var items=[];
+  var wallFix=0;
+  if(s.wall===1){wallFix=Math.min(120,rent*0.04);items.push({k:'墙面轻微处理',v:wallFix,lvl:'w',txt:'钉孔/污渍补漆，市场价通常 50–150 元/处，按最低一处算'});}
+  else if(s.wall===2){wallFix=Math.min(600,rent*0.18);items.push({k:'墙面明显损坏',v:wallFix,lvl:'r',txt:'大面积涂鸦/发霉/脱皮，房东常按整面重刷报价（800–2000 元），这里取偏低的估算'});}
+  var floorFix=0;
+  if(s.floor===1){floorFix=Math.min(200,rent*0.06);items.push({k:'地面轻微划痕',v:floorFix,lvl:'w',txt:'木地板划痕通常按“打磨翻新”整间报价，单项维修不划算，所以房东倾向全算'});}
+  else if(s.floor===2){floorFix=Math.min(900,rent*0.26);items.push({k:'地面破损',v:floorFix,lvl:'r',txt:'起翘/破洞通常要换板，报价随材质差异很大'});}
+  var furnFix=0;
+  if(s.furn===1){furnFix=0;items.push({k:'家具家电磨损',v:0,lvl:'s',txt:'正常使用产生的磨损（掉漆、坐垫塌陷），按《民法典》第七百一十条不属于赔偿范围'});}
+  else if(s.furn===2){furnFix=Math.min(800,rent*0.23);items.push({k:'家具家电损坏',v:furnFix,lvl:'r',txt:'损坏可以扣，但对方必须给维修发票或换新凭证；不能按“原价折旧后仍全额”'});}
+  var cleanFee=0;
+  if(s.clean===2&&c.cleanfee){cleanFee=Math.min(400,rent*0.12);items.push({k:'保洁费（合同有约定）',v:cleanFee,lvl:'w',txt:'合同写了固定保洁费，这项比较难争回；但可以要求对方出示保洁发票'});}
+  else if(s.clean===2){cleanFee=Math.min(200,rent*0.06);items.push({k:'保洁费（合同未约定）',v:cleanFee,lvl:'w',txt:'合同没写保洁费，房东自行扣款缺乏依据，可以拒付'});}
+  var keyFee=0;
+  if(s.key>=1){keyFee=(s.key===1?50:150);items.push({k:'钥匙/门禁卡补办',v:keyFee,lvl:'w',txt:'按实际补办成本算，门禁卡 20–80 元/张，换锁芯 150–400 元'});}
+  if(s.util===2){items.push({k:'水电燃气欠费',v:0,lvl:'r',txt:'这项会据实结算，且优先从押金扣——先自己去结清并拍照，别让它变成“说不清”'});}
+
+  /* 2. 合同条款带来的额外风险敞口 */
+  var riskOpen=0;
+  if(c.noreturn&&left>0)riskOpen+=dep*0.6;
+  if(c.anyloss)riskOpen+=dep*0.15;
+  if(c.repair)riskOpen+=dep*0.1;
+  if(c.natural)riskOpen+=dep*0.1;
+
+  /* 3. 证据完整度 → 争回比例 */
+  var evidence=0;
+  if(state.h.h_contract)evidence+=1;
+  if(state.h.h_movein)evidence+=1.2;
+  if(state.h.h_handover)evidence+=1.5;
+
+  var fair=Math.max(0,dep-wallFix-floorFix-furnFix-cleanFee-keyFee);
+  var hi=fair;
+  var lo=fair;
+  if(!state.h.h_movein){lo-=dep*0.12;}
+  if(!state.h.h_contract){lo-=dep*0.08;}
+  if(!state.h.h_handover){lo-=dep*0.10;}
+  if(src==='long'){lo-=dep*0.05;hi+=dep*0.02;}
+  if(src==='agency'){lo-=dep*0.06;}
+  if(months>18){lo+=dep*0.02;hi+=dep*0.02;}
+  lo=Math.max(0,lo-riskOpen*0.35);
+  hi=Math.max(lo,hi-riskOpen*0.05);
+  lo=Math.min(lo,dep);hi=Math.min(hi,dep);
+
+  /* 4. 分数：证据 + 状态 + 条款 */
+  var score=100;
+  score-=Math.min(30,riskOpen/Math.max(dep,1)*60);
+  score-=(s.wall===2?14:s.wall===1?5:0);
+  score-=(s.floor===2?14:s.floor===1?5:0);
+  score-=(s.furn===2?12:s.furn===1?0:0);
+  score-=(s.clean===2?8:s.clean===1?2:0);
+  score-=(s.key*4);
+  score-=(s.util===2?10:s.util===1?4:0);
+  score-=(3-evidence)*9;
+  if(c.delay30)score-=4;
+  if(c.cleanfee&&s.clean<2)score-=2;
+  if(state.h.h_handover)score-=4; /* 已经签了、没写“无损坏”，反而被动 */
+  score=Math.max(3,Math.min(100,Math.round(score)));
+
+  /* 5. 输出 */
+  $('sc').textContent=score;
+  var lvl=score>=75?'s':score>=45?'w':'r';
+  $('sc').style.color=lvl==='s'?'var(--safe)':lvl==='w'?'var(--warn)':'var(--risk)';
+  $('scTxt').textContent=score>=75?'证据齐、风险小，正常退租没问题':
+                        score>=45?'有几处会被拿来扣钱，退租前先补证据':
+                        '风险较高，别口头交接，务必书面留痕';
+  $('depTxt').textContent=fmt(dep)+' 元';
+  $('lo').textContent=fmt(lo);
+  $('hi').textContent=fmt(hi);
+  $('verdict').textContent='按你填的情况，对方很可能主张扣 '+fmt(dep-fair)+' 元'
+    +(riskOpen>0?'，并可援引合同条款进一步压到 '+fmt(Math.max(0,lo-riskOpen*0.4))+' 元':'' )+'。';
+
+  var ul=$('fx');ul.innerHTML='';
+  items.forEach(function(it){
+    var li=document.createElement('li');li.className=it.lvl;
+    li.innerHTML='<span class="tag '+(it.lvl==='s'?'s':it.lvl==='r'?'r':'w')+'">'+
+      (it.lvl==='s'?'不必赔':it.lvl==='r'?'可能被扣':'要看合同')+'</span>'+
+      it.k+(it.v?' · 参考 '+fmt(it.v)+' 元':'')+'<em>'+it.txt+'</em>';
+    ul.appendChild(li);
+  });
+  if(!items.length){
+    var li=document.createElement('li');li.className='s';
+    li.innerHTML='<span class="tag s">干净</span>房屋状态没明显问题<em>这种情况下押金被扣，基本只可能是对方想拖或想少退</em>';
+    ul.appendChild(li);
+  }
+  if(!state.h.h_movein){
+    var li2=document.createElement('li');li2.className='r';
+    li2.innerHTML='<span class="tag r">最贵的缺口</span>没有入住时的照片<em>对方说“原来没有这个划痕”，你只能靠嘴反驳。这一条比任何条款都致命</em>';
+    ul.appendChild(li2);
+  }
+  if(c.delay30){
+    var li3=document.createElement('li');li3.className='w';
+    li3.innerHTML='<span class="tag w">时间差</span>30 个工作日才退押金<em>建议在交接单上直接写死日期，把“30 个工作日”压成具体某天</em>';
+    ul.appendChild(li3);
+  }
+  $('resBox').classList.add('on');
+  return {lo:lo,hi:hi,score:score,dep:dep,fair:fair};
+}
+
+/* ---------- 条款扫描 ---------- */
+var KEYMAP=[
+  [/自然损耗|恢复原状/, 'natural'],
+  [/30\s*个?工作日|三十\s*个?工作日/, 'delay30'],
+  [/保洁费|清洁费|打扫费/, 'cleanfee'],
+  [/提前退租.{0,12}(不退|不退还|不予退还)/, 'noreturn'],
+  [/维修.{0,10}(押金|扣除)/, 'repair'],
+  [/抵扣任何|一切损失|任何损失/, 'anyloss']
+];
+$('scan').addEventListener('click',function(){
+  var t=$('contract').value||'';
+  if(!t.trim()){$('scanOut').textContent='先粘一段条款进来';return;}
+  var hit=[];
+  KEYMAP.forEach(function(m){
+    if(m[0].test(t)){
+      var el=document.querySelector('[data-c="'+m[1]+'"]');
+      if(el&&!el.checked){el.checked=true;state.clause[m[1]]=true;hit.push(m[1]);}
+    }
+  });
+  save();calc();
+  $('scanOut').textContent=hit.length?('命中 '+hit.length+' 条，已自动勾上，看下面的结果'):'这段里没命中已知的六类条款（不代表没有别的坑）';
+});
+
+/* ---------- 取证清单 ---------- */
+var SHOTS=[
+  {t:'入户门与门锁',d:'门锁正面 + 钥匙孔 + 门框，证明门锁完好、没有撬痕'},
+  {t:'玄关 / 鞋柜',d:'整体一张，柜门打开一张'},
+  {t:'客厅全景',d:'站在门口拍，四个角各一张，尽量把地面和天花板同时拍进去'},
+  {t:'墙面细节',d:'每个钉孔、每处污渍单独拍一张近景，再拍一张带整体参照的远景'},
+  {t:'地面',d:'低角度拍，能看出划痕和光泽差异；木地板重点拍接缝'},
+  {t:'卧室 / 床垫',d:'床垫掀起一角拍正反面，拍床架连接处'},
+  {t:'厨房台面与柜内',d:'台面、灶台、油烟机（含滤网）、水槽下方管道'},
+  {t:'卫生间',d:'瓷砖缝、马桶、淋浴房玻璃水垢、地漏'},
+  {t:'家电铭牌与运行状态',d:'空调/冰箱/洗衣机：铭牌（型号）+ 通电运行时的显示'},
+  {t:'水表 · 电表 · 燃气表',d:'表面读数要拍清楚，同一天拍，和交接单上的数字对上'},
+  {t:'钥匙 / 门禁卡 / 遥控器',d:'全部摆在桌上拍一张，数量写进交接单'},
+  {t:'交房当天的整体视频',d:'一镜到底，从门口走一圈，边走边说出日期和房间名；视频比照片难反驳'}
+];
+(function(){
+  var box=$('shots');
+  SHOTS.forEach(function(x,i){
+    var d=document.createElement('div');d.className='ck';
+    d.innerHTML='<input type="checkbox" data-s="'+i+'"><span>'+x.t+'<small>'+x.d+'</small></span>';
+    box.appendChild(d);
+  });
+})();
+function shotsText(){
+  return '退租取证清单\n\n'+SHOTS.map(function(x,i){return (i+1)+'. '+x.t+'\n   '+x.d;}).join('\n')+
+  '\n\n提示：全程打开水印相机；每段视频开头说一句“今天是X年X月X日，我在XX地址验房”。';
+}
+$('copyShots').addEventListener('click',function(){copy(shotsText(),this);});
+$('dlShots').addEventListener('click',function(){dl('退租取证清单.txt',shotsText());});
+
+/* ---------- 文书生成 ---------- */
+function dstr(v){if(!v)return '____年__月__日';var p=v.split('-');return p[0]+'年'+p[1]+'月'+p[2]+'日';}
+function today(){var d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';}
+
+$('genHand').addEventListener('click',function(){
+  var r=calc()||{lo:0,hi:0,dep:+$('dep').value||0};
+  var dep=+$('dep').value||0;
+  var t=['退租交接确认单','',
+  '房屋地址：'+($('addr').value||'____________________'),
+  '出租方（甲方）：'+($('landlord').value||'____________')+'    承租方（乙方）：'+($('tenant').value||'____________'),
+  '交房日期：'+dstr($('d1').value)+'    押金应退日期：'+dstr($('d2').value),
+  '',
+  '一、房屋及设施现状',
+  '1. 墙面：'+['完好','轻微污渍/钉孔','有明显损坏'][state.seg.wall],
+  '2. 地面：'+['完好','轻微划痕','有明显破损'][state.seg.floor],
+  '3. 家具家电：'+['完好','存在正常使用磨损','存在损坏'][state.seg.furn],
+  '4. 保洁：'+['已彻底打扫','已做基本打扫','未打扫'][state.seg.clean],
+  '5. 钥匙/门禁卡：'+['齐全','缺 1 件','缺多件'][state.seg.key],
+  '6. 水电燃气：'+['已结清并抄表','未抄表','存在欠费'][state.seg.util],
+  '',
+  '二、费用结算',
+  '1. 押金金额：人民币 '+dep+' 元。',
+  '2. 双方确认应扣款项：'+(($('owed').value&&+$('owed').value>0)?('人民币 '+$('owed').value+' 元，扣款事由：'+($('reason').value||'（未填写）')):'无（大写：零元）'),
+  '3. 应退押金：人民币 '+Math.max(0,dep-(+$('owed').value||0))+' 元，于 '+dstr($('d2').value)+' 前退至乙方指定账户。',
+  '4. 水电燃气读数：水表 ______ 电表 ______ 燃气表 ______。',
+  '',
+  '三、双方确认',
+  '1. 乙方已交还全部钥匙/门禁卡，甲方已验收房屋。',
+  '2. 除上述第 2 项所列扣款外，甲方不再就本次租赁另行主张其他费用。',
+  '3. 本确认单一式两份，双方各持一份，签字后生效。',
+  '',
+  '甲方签字：____________    日期：'+today(),
+  '乙方签字：____________    日期：'+today(),
+  '',
+  '（本单由「押金体检」生成，仅作记录模板，不构成法律意见）'].join('\n');
+  $('handOut').textContent=t;
+});
+
+$('genLetter').addEventListener('click',function(){
+  var dep=+$('dep').value||0, owed=+$('owed').value||0, days=+$('days').value||7;
+  var addr=$('addr').value||'（房屋地址）';
+  var reason=$('reason').value||'（对方主张的扣款事由）';
+  var lo=(calc()||{lo:0}).lo;
+  var t=[
+  '关于退还租赁押金的催告函','',
+  '致：'+($('landlord').value||'（出租方）'),
+  '发件人：'+($('tenant').value||'（承租方）'),
+  '房屋地址：'+addr,
+  '日期：'+today(),'',
+  '一、事实',
+  '本人自租住上述房屋，租期届满后已于 '+dstr($('d1').value)+' 办理退租交接，房屋及附属设施已按约定交还，钥匙/门禁卡已交还，水电燃气费用已结清（如未结清，以实际读数为准）。',
+  '本人共支付押金人民币 '+dep+' 元。',
+  '截至本函发出之日，贵方尚未退还押金'+(owed>0?('，并主张扣除人民币 '+owed+' 元，事由为：'+reason):'')+'。','',
+  '二、意见',
+  '1. 押金系为担保租赁合同履行而支付，租赁关系终止、房屋返还且无欠费后，其担保目的已经消灭，应当返还。',
+  '2. 关于扣款：请贵方在回复中一并提供 (a) 扣款项目的具体依据（合同条款编号）；(b) 维修或保洁的正式发票/收据；(c) 施工前后的对比照片。未能提供的部分，本人不予认可。',
+  '3. 依《中华人民共和国民法典》第七百一十条，承租人按照约定的方法或者根据租赁物的性质使用租赁物，致使租赁物受到损耗的，不承担赔偿责任。正常使用产生的磨损不属于赔偿范围。',
+  '4. 依《民法典》第七百三十三条，租赁期限届满，承租人应当返还租赁物；返还的租赁物应当符合按照约定或者根据租赁物的性质使用后的状态。本人已履行返还义务。','',
+  '三、要求',
+  '请贵方于收到本函之日起 '+days+' 日内，将押金人民币 '+dep+' 元（或经双方确认后的余额）退还至本人账户。',
+  '逾期未处理的，本人将向属地住房和城乡建设主管部门及 12345 政务服务便民热线投诉，并保留通过小额诉讼程序主张返还押金及资金占用损失的权利。','',
+  '本人仍希望通过协商解决，以上。','',
+  '发件人（签字）：____________',
+  '联系电话：____________',
+  '附：交接单、房屋现状照片、押金支付凭证、聊天记录',
+  '',
+  '（本函由「押金体检」生成，为通用模板，不构成法律意见；正式使用前请按实际情况修改）'].join('\n');
+  $('letterOut').textContent=t;
+});
+
+/* ---------- 投诉信：12345 / 住建 / 市场监管 ---------- */
+$('genComplaint').addEventListener('click',function(){
+  var dep=+$('dep').value||0, owed=+$('owed').value||0, months=+$('months').value||0;
+  var addr=$('addr').value||'（房屋地址）';
+  var ll=$('landlord').value||'（出租方）';
+  var me=$('tenant').value||'（投诉人）';
+  var phone=$('phone').value.trim();
+  var reason=$('reason').value||'（对方主张的扣款事由）';
+  var srcEl=$('src'), srcTxt=srcEl.options[srcEl.selectedIndex].text;
+  var dept=$('dept').value;
+  var to = dept==='住建' ? '属地住房和城乡建设局（住房租赁管理部门）'
+        : dept==='市场' ? '属地市场监督管理局'
+        : '12345 政务服务便民热线';
+  var t=[
+  '关于要求督促退还租房押金的投诉信','',
+  '受理单位：'+to,
+  '投诉人：'+me+(phone?('（联系电话：'+phone+'）'):''),
+  '被投诉人：'+ll+'（房源类型：'+srcTxt+'）',
+  '房屋地址：'+addr,
+  '日期：'+today(),'',
+  '一、基本情况',
+  '本人租住上述房屋共 '+(months||'__')+' 个月，已支付押金人民币 '+dep+' 元。租赁关系已终止，房屋及附属设施已按约定交还，钥匙/门禁卡已交还，水电燃气费用已结清。',
+  '', '二、争议事项',
+  '租赁关系终止后，被投诉人未退还押金'+(owed>0?('，并主张扣除人民币 '+owed+' 元，事由为：'+reason):'')+'。',
+  '本人已以书面（或微信文字）方式要求其限期退还，并请其就扣款提供合同依据与支出凭证，被投诉人未予处理。',
+  '', '三、投诉请求',
+  '1. 请核查上述押金扣减是否具有明确的合同依据与实际发生的支出凭证；',
+  '2. 请督促（责令）被投诉人限期退还本人押金人民币 '+dep+' 元（或经核实的余额）；'
+  ];
+  if(dept==='市场'){t.push('3. 如被投诉人为房地产经纪机构，请一并核查其收费是否明码标价、是否存在违规收取费用。');}
+  t=t.concat([
+  '', '四、依据',
+  '《中华人民共和国民法典》第七百一十条（按约定使用产生的损耗不承担赔偿责任）、第七百三十三条（租赁期限届满返还租赁物）；',
+  '《住房租赁条例》（2025 年 9 月 15 日施行）关于押金收取、返还及不得无故扣减押金的规定。',
+  '', '五、附件',
+  '1. 租赁合同（含押金、退租条款）；2. 押金支付凭证；3. 入住与退租时房屋照片；4. 交接单/聊天记录；5. 已发出的催告函及送达记录。',
+  '', '投诉人（签字）：____________',
+  '日期：'+today(),
+  '', '（本信由「押金体检」生成，为通用模板，不构成法律意见；提交前请按实际情况修改）'
+  ]);
+  $('complaintOut').textContent=t.join('\n');
+});
+
+/* ---------- 通用：复制 / 下载 / 打印 ---------- */
+function copy(text,btn){
+  var done=function(){if(btn){var o=btn.textContent;btn.textContent='已复制';setTimeout(function(){btn.textContent=o;},1200);}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(function(){fallback(text);done();});
+  }else{fallback(text);done();}
+}
+function fallback(text){
+  var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);
+}
+function dl(name,text){
+  try{
+    var b=new Blob([text],{type:'text/plain;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
+  }catch(e){copy(text,null);}
+}
+$('copyHand').addEventListener('click',function(){copy($('handOut').textContent,this);});
+$('copyLetter').addEventListener('click',function(){copy($('letterOut').textContent,this);});
+$('copyComplaint').addEventListener('click',function(){copy($('complaintOut').textContent,this);});
+$('printAll').addEventListener('click',function(){window.print();});
+
+/* ---------- Tab ---------- */
+var tabs=document.querySelectorAll('.tabs button');
+Array.prototype.forEach.call(tabs,function(b){
+  b.addEventListener('click',function(){
+    Array.prototype.forEach.call(tabs,function(x){x.setAttribute('aria-selected','false');});
+    b.setAttribute('aria-selected','true');
+    document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+    $(b.getAttribute('data-tab')).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+$('see').addEventListener('click',function(){
+  calc();
+  var y=$('resBox').offsetTop-20;
+  window.scrollTo({top:y,behavior:'smooth'});
+});
+
+/* ---------- 当天步骤 ---------- */
+var STEPS=[
+  ['提前 7 天：把入住照片翻出来','和现在逐处对比，先自己找一遍问题，别等对方找'],
+  ['提前 3 天：把合同拍照存好','重点拍押金条款、退租条款、违约条款三页'],
+  ['验房当天：先拍全景视频再让对方进门','顺序反了，你就只能拍“已经被看过一遍”的房子'],
+  ['当面走完，把交接单填完再签字','没填完就签，等于承认“房屋无异议”'],
+  ['押金退还日期写成具体某天','写“尽快”“下周”在投诉时不算约定'],
+  ['到期没退：第 1 天发催告，第 8 天投诉','拖得越久，对方越确信你不会较真']
+];
+(function(){
+  var box=$('steps');
+  STEPS.forEach(function(s,i){
+    var d=document.createElement('div');d.className='ck';
+    d.innerHTML='<input type="checkbox" data-step="'+i+'"><span>'+s[0]+'<small>'+s[1]+'</small></span>';
+    box.appendChild(d);
+  });
+})();
+
+load();
+calc();
+})();
+</script>
+</body>
+</html>
