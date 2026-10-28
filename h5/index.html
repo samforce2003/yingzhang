@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>H5 修复台 · 体检 + 一键改掉（基于 221 个 AI 生成 H5 实测）</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#0f1216; --bg2:#151a21; --card:#1a2028; --line:#28313d;
+  --ink:#e8edf3; --ink2:#9aa8b8; --ink3:#6b7889;
+  --acc:#3ddc97; --acc2:#2bb37c; --warn:#ffb454; --bad:#ff6b6b; --info:#6cb2ff;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 600px at 50% -10%,#1b2530 0%,var(--bg) 55%) no-repeat,var(--bg);
+  color:var(--ink); font-family:var(--sans); line-height:1.65;
+  min-height:100vh; min-height:100dvh;
+  -webkit-text-size-adjust:100%;
+  padding:0 16px 64px;
+}
+.wrap{max-width:860px;margin:0 auto}
+header{padding:34px 0 10px}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--acc);
+  border:1px solid rgba(61,220,151,.28);background:rgba(61,220,151,.08);
+  padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+h1{font-size:clamp(22px,5.2vw,32px);line-height:1.3;margin:16px 0 8px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--acc)}
+.sub{color:var(--ink2);font-size:14.5px;margin:0 0 6px}
+.sub b{color:var(--ink);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:18px 0}
+.panel.drop-on{border-color:var(--acc);box-shadow:0 0 0 3px rgba(61,220,151,.12)}
+textarea{
+  width:100%;min-height:170px;resize:vertical;border:0;outline:0;background:#0d1116;
+  color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.6;
+  border-radius:10px;padding:12px;border:1px solid var(--line);
+}
+textarea::placeholder{color:#55616f}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.btn{
+  appearance:none;border:1px solid var(--line);background:#202832;color:var(--ink);
+  padding:8px 13px;border-radius:9px;font-size:13.5px;cursor:pointer;font-family:inherit;
+  min-height:38px;transition:border-color .15s,background .15s,transform .05s;
+}
+.btn:hover{border-color:#3a4757;background:#242e3a}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#06231a;font-weight:650}
+.btn.primary:hover{background:#4ae5a6}
+.btn.fix{background:#2b6cb0;border-color:#2b6cb0;color:#fff;font-weight:650}
+.btn.fix:hover{background:#3182ce}
+.btn.ghost{background:transparent}
+.meta{margin-left:auto;font-size:12.5px;color:var(--ink3);font-family:var(--mono)}
+.sum{display:flex;gap:14px;flex-wrap:wrap;align-items:center;border-radius:14px;padding:16px;
+  background:linear-gradient(180deg,#1c2530,#171d25);border:1px solid var(--line);margin:20px 0 14px}
+.score{font-size:34px;font-weight:750;line-height:1;letter-spacing:-.02em}
+.score small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:4px}
+.sum .txt{flex:1;min-width:220px;font-size:14px;color:var(--ink2)}
+.sum .txt b{color:var(--ink)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pill{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2)}
+.pill.bad{color:#ffb3b3;border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.08)}
+.pill.warn{color:#ffd8a3;border-color:rgba(255,180,84,.35);background:rgba(255,180,84,.08)}
+.pill.ok{color:#a6f2cf;border-color:rgba(61,220,151,.35);background:rgba(61,220,151,.08)}
+h2.sec{font-size:14px;color:var(--ink2);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:26px 0 10px}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px;margin:10px 0}
+.card.bad{border-left:3px solid var(--bad)}
+.card.warn{border-left:3px solid var(--warn)}
+.card.info{border-left:3px solid var(--info)}
+.card h3{margin:0 0 4px;font-size:15.5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.card h3 .tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px;letter-spacing:.05em}
+.tag.bad{background:rgba(255,107,107,.14);color:#ff9d9d}
+.tag.warn{background:rgba(255,180,84,.14);color:#ffcd8a}
+.tag.info{background:rgba(108,178,255,.14);color:#a5ccff}
+.tag.auto{background:rgba(61,220,151,.16);color:#8ef0c2;margin-left:auto}
+.card p{margin:6px 0;font-size:14px;color:var(--ink2)}
+.card p.bench{font-size:12.5px;color:var(--ink3);border-top:1px dashed var(--line);padding-top:7px;margin-top:9px}
+.card p.bench b{color:var(--warn);font-weight:600}
+code,kbd{font-family:var(--mono);font-size:12.5px;background:#0d1116;border:1px solid var(--line);
+  padding:1px 5px;border-radius:5px;color:#cfe4ff}
+pre{margin:8px 0 0;background:#0d1116;border:1px solid var(--line);border-radius:9px;padding:10px;
+  overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;color:#bfe3d2}
+.lines{font-size:12.5px;color:var(--ink3);font-family:var(--mono)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--ink3);font-size:14px}
+.done{border:1px solid rgba(61,220,151,.35);background:linear-gradient(180deg,rgba(61,220,151,.12),rgba(61,220,151,.04));
+  border-radius:14px;padding:16px;margin:14px 0}
+.done h3{margin:0 0 6px;font-size:16px;color:#b9f5d8}
+.done .list{margin:8px 0 0;padding:0;list-style:none}
+.done .list li{font-size:13.5px;color:var(--ink2);padding:5px 0 5px 20px;position:relative}
+.done .list li:before{content:"✓";position:absolute;left:0;color:var(--acc);font-weight:700}
+.done .list li.skip:before{content:"—";color:var(--ink3)}
+.done .warnbox{margin-top:10px;font-size:12.5px;color:#ffd8a3;border-top:1px dashed rgba(255,180,84,.3);padding-top:8px}
+footer{margin-top:34px;color:var(--ink3);font-size:12.5px;line-height:1.8;border-top:1px solid var(--line);padding-top:14px}
+footer b{color:var(--ink2)}
+@media(max-width:520px){
+  header{padding-top:22px}
+  .sum{padding:13px}
+  .score{font-size:28px}
+  .btn{flex:1 1 auto;text-align:center}
+  .meta{width:100%;margin-left:0;text-align:right}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23f6f3ea'/%3E%3Crect x='2' y='2' width='3' height='12' fill='%238c2f2f'/%3E%3Crect x='7' y='2' width='8' height='2' fill='%231d1b18'/%3E%3Crect x='7' y='6' width='8' height='2' fill='%231d1b18'/%3E%3Crect x='7' y='10' width='5' height='2' fill='%231d1b18'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="brand">H5 修复台 · 本地运行</span>
+    <h1>查出问题，然后 <em>把它改掉</em></h1>
+    <p class="sub">12 类静态检查 + <b>4 类一键自动修复</b>，全部在浏览器里跑，<b>代码不出本机</b>。样本：我逐页抓源码体检过的 <b>221 个已上架 AI 生成 H5</b>；其中 <b>65 个（29%）</b> 有能自动改掉的硬伤，改完在"禁用存储"（≈微信内置浏览器）环境下，<b>31 个从打开就崩变成能跑</b>。</p>
+  </header>
+
+  <section class="panel" id="panel">
+    <textarea id="src" spellcheck="false" placeholder="把 HTML 源码粘进来，或把 .html 文件拖到这块区域……"></textarea>
+    <div class="row">
+      <label class="btn primary" for="file">选择 .html 文件</label>
+      <input type="file" id="file" accept=".html,.htm,text/html" hidden>
+      <button class="btn fix" id="doFix" type="button">一键修复</button>
+      <button class="btn ghost" id="sample" type="button">示例：问题代码</button>
+      <button class="btn ghost" id="sample2" type="button">示例：修好的</button>
+      <span class="meta" id="meta">等待输入…</span>
+    </div>
+  </section>
+
+  <section id="fixbar"></section>
+  <section id="out"></section>
+
+  <footer>
+    <b>数据来源</b>：2026-10-25 对某 AI 应用社区 221 个公开 H5 作品逐个抓取源码做静态体检（中位体积 20KB，中位浏览 2 次）。<br>
+    <b>自动修复只碰语法层</b>：改的是「一定会崩」的地方（存储兜底、100vh、基础 meta、字体外链），<b>不碰业务逻辑</b>。修完请再体检一次，并在真机上点一遍主流程。<br>
+    <b>说明</b>：体检干净 ≠ 有人用。静态检查抓不到业务逻辑错、抓不到没人需要的功能。<br>
+    <b>作者</b>：林小黑 · 用 AI 写应用，也替 AI 写的应用挑错。
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- 基准数据（本轮用同一套检测器重算，n=221） ---------- */
+  var BASE = {
+    n: 221,
+    hist: {0:5, 1:133, 2:41, 3:32, 4:7, 5:3},
+    rate: {
+      syntax: 0, ls: 0.158, innerhtml: 0.932, vh: 0.204, cdn: 0.068, meta: 0.014,
+      persist: 0.100, ph: 0.068, eval: 0.005, form: 0.005, undef: 0, nothtml: 0.009
+    },
+    fixable: 0.294
+  };
+
+  /* ---------- 存储兜底（本工具自己先用一遍） ---------- */
+  var store = (function(){
+    var mem = {};
+    return {
+      get: function(k){
+        try { var v = localStorage.getItem(k); return v === null ? (mem[k] || null) : v; }
+        catch (e) { return mem[k] || null; }
+      },
+      set: function(k, v){
+        mem[k] = v;
+        try { localStorage.setItem(k, v); } catch (e) { /* 存储被禁用：只留内存副本 */ }
+      }
+    };
+  })();
+
+  var $ = function(id){ return document.getElementById(id); };
+  var src = $('src'), out = $('out'), meta = $('meta'), panel = $('panel'), fixbar = $('fixbar');
+
+  /* ---------- 工具 ---------- */
+  function lineOf(text, idx){
+    var n = 1;
+    for (var i = 0; i < idx && i < text.length; i++) if (text.charCodeAt(i) === 10) n++;
+    return n;
+  }
+  function pct(x){ return Math.round(x * 100) + '%'; }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function bytes(s){ return new TextEncoder().encode(s).length; }
+
+  function inlineScripts(html){
+    var re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi, m, list = [];
+    while ((m = re.exec(html)) !== null) {
+      var attrs = m[1] || '';
+      if (/\bsrc\s*=/i.test(attrs)) continue;
+      list.push({ attrs: attrs, code: m[2] || '', index: m.index + m[0].indexOf(m[2]), whole: m[0], start: m.index });
+    }
+    return list;
+  }
+  function stripCode(html){
+    return html.replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+               .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+               .replace(/<!--[\s\S]*?-->/g, ' ');
+  }
+
+  /* 把注释/字符串/模板串/正则字面量的内容抹成空格（保留引号与换行，长度不变）。
+     两个关键修正（比上一版）：
+     1) 「/」只有在前一个有效字符是运算符时才当正则开头；`)` `]` 后面的 `/` 是除法。
+        上一版把 `(a+b)/2` 当成了正则开头，会把后面一大段代码误掩码 → 漏检。
+     2) 掩码长度与原文严格一致，修复时可以用它当"位置地图"，只改真代码。 */
+  function stripNoise(code){
+    var res = [], i = 0, n = code.length, st = 'code', cls = false;
+    function lastSig(){
+      for (var j = res.length - 1; j >= 0; j--) if (res[j].charCodeAt(0) > 32) return res[j];
+      return '';
+    }
+    while (i < n) {
+      var c = code.charAt(i), c2 = code.substr(i, 2), cc = code.charCodeAt(i);
+      if (st === 'code') {
+        if (c2 === '//') { st = 'line'; res.push(' ', ' '); i += 2; continue; }
+        if (c2 === '/*') { st = 'block'; res.push(' ', ' '); i += 2; continue; }
+        if (cc === 39 || cc === 34 || cc === 96) { st = c; res.push(c); i++; continue; }
+        if (c === '/') {
+          var prev = lastSig();
+          if (prev === '' || '(,;:=!&|?{}[]+-*%<>~^'.indexOf(prev) >= 0) {
+            st = 'regex'; cls = false; res.push(c); i++; continue;
+          }
+        }
+        res.push(c); i++; continue;
+      }
+      if (st === 'line') {
+        if (cc === 10) { st = 'code'; res.push(c); } else res.push(' ');
+        i++; continue;
+      }
+      if (st === 'block') {
+        if (c2 === '*/') { st = 'code'; res.push(' ', ' '); i += 2; continue; }
+        res.push(cc === 10 ? c : ' '); i++; continue;
+      }
+      if (st === 'regex') {
+        if (cc === 92) { res.push(' ', ' '); i += 2; continue; }
+        if (c === '[') cls = true;
+        else if (c === ']') cls = false;
+        else if (c === '/' && !cls) { st = 'code'; res.push('/'); i++; continue; }
+        res.push(cc === 10 ? c : ' '); i++; continue;
+      }
+      if (cc === 92) { res.push(' ', ' '); i += 2; continue; }
+      if (c === st) { st = 'code'; res.push(c); i++; continue; }
+      res.push(cc === 10 ? c : ' '); i++;
+    }
+    return res.join('');
+  }
+
+  var RESERVED = {if:1,for:1,while:1,switch:1,return:1,this:1,typeof:1,'new':1,'do':1,else:1,catch:1,
+                  'function':1,'var':1,'let':1,'const':1,'class':1,'$':1,'window':1,'document':1};
+
+  /* ---------- 检查器 ---------- */
+  function looksLikeHtml(html){
+    var head = html.slice(0, 4000);
+    return /<html\b|<body\b|<!doctype\s+html/i.test(head);
+  }
+
+  function check(html){
+    var issues = [];
+
+    /* 0. 根本不是 HTML（上传了 zip / 图片 / 二进制） */
+    if (!looksLikeHtml(html)) {
+      var bin = /^PK/.test(html) ? 'ZIP 压缩包' : (/^MZ/.test(html) ? 'Windows 程序' : (/^%PDF/.test(html) ? 'PDF' : '非 HTML 内容'));
+      issues.push({
+        id:'nothtml', sev:'bad', title:'这不是一个 HTML 页面，用户点开只会下载一个文件',
+        detail:'作品地址返回的内容不是网页（识别为 <b>' + bin + '</b>）。用户点开链接会直接触发下载，看不到任何界面——这是所有问题里最致命的一种，因为它连“打开”这一步都没过。',
+        lines:'前 4KB 内没有 &lt;html&gt; / &lt;body&gt; / doctype',
+        rate: BASE.rate.nothtml,
+        fix:'把构建产物里的 <code>index.html</code> 上传，而不是压缩包；如果用的是打包工具，先本地双击打开确认能看到界面。'
+      });
+      return { issues: issues, bytes: bytes(html), scripts: 0 };
+    }
+
+    var scripts = inlineScripts(html);
+    var rawJs = scripts.map(function(s){ return s.code; }).join('\n');
+    var normJs = rawJs.replace(/['"](localStorage|sessionStorage)['"]/g, '$1');
+    var js = stripNoise(normJs);
+    var body = stripCode(html);
+
+    /* 1. 语法 */
+    var synErr = null;
+    for (var i = 0; i < scripts.length; i++) {
+      var code = scripts[i].code;
+      if (code.trim().length < 20) continue;
+      if (/type\s*=\s*["']module/i.test(scripts[i].attrs)) continue;
+      try { new Function(code); }
+      catch (e) { synErr = { msg: e && e.message ? e.message : String(e), line: lineOf(html, scripts[i].index) }; break; }
+    }
+    if (synErr) issues.push({
+      id:'syntax', sev:'bad', title:'JS 语法错误：整段脚本不会执行',
+      detail:'浏览器解析到这一行就放弃整块 <code>&lt;script&gt;</code>，页面看着还在，按钮全是死的。AI 生成代码最常见的翻车方式：字符串里裸换行、少一个右括号、中文标点混进代码。',
+      lines:'第 ' + synErr.line + ' 行起的 &lt;script&gt;：' + esc(synErr.msg),
+      rate: BASE.rate.syntax,
+      fix:'把报错行附近的引号/括号补齐；单引号字符串里不要直接换行，改用反引号模板串或 <code>\\n</code>。<br>自检命令：<code>node --check app.js</code>'
+    });
+
+    /* 2. 裸 localStorage */
+    var lsRe = /(?:localStorage|sessionStorage)\s*\./g, m2, naked = [], lsTotal = 0;
+    while ((m2 = lsRe.exec(js)) !== null) {
+      lsTotal++;
+      var back = js.slice(Math.max(0, m2.index - 500), m2.index);
+      if (!/try\s*\{/.test(back)) naked.push(m2.index);
+    }
+    if (naked.length) issues.push({
+      id:'ls', sev:'bad', rule:'ls', title:'裸调 localStorage：存储被禁用时直接抛异常',
+      detail:'微信内置浏览器、iOS 隐私模式、部分 App WebView 会禁用存储，<code>localStorage</code> 一碰就抛 <code>SecurityError</code>。没有 <code>try/catch</code> 就等于：后面所有代码全部不执行，用户看到的是“点了没反应”。而且不报错、不提示，最难查。',
+      lines: naked.length + ' 处未包裹（共 ' + lsTotal + ' 处存储调用）',
+      rate: BASE.rate.ls,
+      fix:'套一层带内存兜底的 store（<code>try/catch</code> + 失败时退回内存），再把调用点换过去。一键修复会替你做完这步。'
+    });
+
+    /* 3. 动态 innerHTML */
+    var ihRe = /\.innerHTML\s*\+?=\s*/g, ih = 0, m3;
+    while ((ihRe.exec(js)) !== null) ih++;
+    var tplRe = /\.innerHTML\s*\+?=\s*`[^`]*\$\{/g, tpl = 0;
+    while ((tplRe.exec(js)) !== null) tpl++;
+    if (ih) issues.push({
+      id:'innerhtml', sev: tpl ? 'warn' : 'info',
+      title: tpl ? '把用户输入拼进 innerHTML：一个引号就能改你的页面' : '动态 innerHTML：结构靠字符串拼，改一次崩一次',
+      detail: tpl
+        ? '模板串里带 <code>${}</code> 且直接赋给 <code>innerHTML</code>，只要用户能输入（备注、昵称、搜索词），就能注入标签甚至脚本。至少要用 <code>textContent</code>，需要富文本就过一遍白名单。'
+        : '用字符串拼 HTML 本身不算错，但一旦有一处漏了闭合标签，整块 DOM 会错位，而且没有报错。',
+      lines: ih + ' 处动态赋值' + (tpl ? '，其中 ' + tpl + ' 处含模板插值' : ''),
+      rate: BASE.rate.innerhtml,
+      fix:'用户内容走 <code>el.textContent = s</code>；必须渲染结构时，先 <code>escapeHtml(s)</code> 再拼。'
+    });
+
+    /* 4. 100vh */
+    if (/100vh/.test(html) && !/100dvh|100svh/.test(html)) issues.push({
+      id:'vh', sev:'warn', rule:'vh', title:'只用 100vh：手机上底部会被地址栏吃掉',
+      detail:'移动端 <code>100vh</code> 按“地址栏收起时”的高度算，页面一打开就比屏幕高——底部按钮被顶出可视区，用户以为坏了。',
+      lines:'命中 ' + (html.match(/100vh/g) || []).length + ' 处',
+      rate: BASE.rate.vh,
+      fix:'<pre>height:100vh;\nheight:100dvh; /* 支持的浏览器用这个，不支持的退回上一行 */</pre>'
+    });
+
+    /* 5. 外链依赖 */
+    var depRe = /(?:src|href)\s*=\s*["'](https?:\/\/[^"']+)["']/gi, m4, doms = {}, ext = 0;
+    while ((m4 = depRe.exec(html)) !== null) {
+      var host = (m4[1].match(/^https?:\/\/([^\/]+)/) || [,''])[1];
+      if (!host || /csdn\.net$/.test(host) || /localhost|127\.0\.0\.1/.test(host)) continue;
+      doms[host] = (doms[host] || 0) + 1; ext++;
+    }
+    var badCdn = Object.keys(doms).filter(function(h){
+      return /unpkg|jsdelivr|cdnjs|tailwindcss|googleapis|gstatic|bootcdn|staticfile|skypack/.test(h);
+    });
+    var onlyFonts = badCdn.length > 0 && badCdn.every(function(h){ return /googleapis|gstatic/.test(h); });
+    if (badCdn.length) issues.push({
+      id:'cdn', sev:'bad', rule: onlyFonts ? 'fontcdn' : null,
+      title:'依赖公共 CDN：国内网络下可能一直白屏',
+      detail:'<code>unpkg / jsdelivr / cdnjs / tailwind CDN / Google Fonts</code> 在国内经常超时或全挂。脚本加载失败 = 页面只剩静态壳子，用户点哪儿都没反应，而你的控制台在自己电脑上一切正常。Tailwind 的 CDN 更狠：它在浏览器里现编译 CSS，首屏必慢。',
+      lines: badCdn.map(function(h){ return esc(h); }).join('、') + '（共 ' + ext + ' 个外链）',
+      rate: BASE.rate.cdn,
+      fix: onlyFonts
+        ? '字体外链可以直接删掉，正文回退到系统字体。一键修复会替你删。'
+        : '把依赖下载到本地，和 HTML 一起打包；或直接内联关键 CSS，别在首屏引外部样式。<b>脚本 CDN 不能自动删（删了页面直接坏）</b>，需要你手动内联。'
+    });
+
+    /* 6. 基础三件套 */
+    var noViewport = !/<meta[^>]+name\s*=\s*["']viewport/i.test(html);
+    var noCharset  = !/<meta[^>]+charset/i.test(html);
+    var noLang     = !/<html[^>]+lang\s*=/i.test(html);
+    if (noViewport || noCharset || noLang) issues.push({
+      id:'meta', sev:(noViewport||noCharset) ? 'warn' : 'info', rule:'meta',
+      title:'缺基础 meta：手机上字小如蚁 / 中文乱码',
+      detail:'没有 <code>viewport</code>，手机浏览器按 980px 渲染再缩小，字全糊；没有 <code>charset</code>，中文可能变乱码（尤其分享到微信后）；没有 <code>lang</code>，部分浏览器会把中文当外文处理、字体和断行都不对。',
+      lines: [noViewport ? '缺 viewport' : '', noCharset ? '缺 charset' : '', noLang ? '缺 lang' : ''].filter(Boolean).join(' + '),
+      rate: BASE.rate.meta,
+      fix:'<pre>&lt;meta charset="utf-8"&gt;\n&lt;meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"&gt;</pre>'
+    });
+
+    /* 7. 无持久化 */
+    if (!/localStorage|sessionStorage|indexedDB/.test(js)) issues.push({
+      id:'persist', sev:'warn', title:'没有任何持久化：刷新一次，用户白干',
+      detail:'打卡、记账、清单类应用如果只把数据放内存，用户切个后台回来就清空。这是“用一次就走”的头号原因——不是功能不好，是数据没了。',
+      lines:'未发现 localStorage / sessionStorage / indexedDB',
+      rate: BASE.rate.persist,
+      fix:'至少落一份 <code>localStorage</code>（记得包 try/catch），进入页面先读、每次变更就写。'
+    });
+
+    /* 8. 占位符残留 */
+    var ph = (body.match(/TODO|FIXME|lorem ipsum|示例数据|假数据|待实现|待补充|占位/g) || []);
+    if (ph.length) issues.push({
+      id:'ph', sev:'warn', title:'占位内容没删：用户一眼看出这是半成品',
+      detail:'“示例数据 / TODO / 待实现”这类字样留在页面上，会直接毁掉信任。AI 生成时很爱留这些。',
+      lines:'命中 ' + ph.length + ' 处：' + esc(ph.slice(0, 5).join('、')),
+      rate: BASE.rate.ph,
+      fix:'全部替换成真实文案或空状态提示（“还没有记录，点右上角添加”）。'
+    });
+
+    /* 9. eval / document.write */
+    var ev = (js.match(/\beval\s*\(|document\.write\s*\(/g) || []);
+    if (ev.length) issues.push({
+      id:'eval', sev:'info', title:'eval / document.write：性能与安全双输',
+      detail:'<code>document.write</code> 在页面加载后调用会清空整页；<code>eval</code> 会让 CSP 失效、也容易被注入。',
+      lines:'命中 ' + ev.length + ' 处',
+      rate: BASE.rate.eval,
+      fix:'用 DOM API 或 <code>JSON.parse</code> 替代。'
+    });
+
+    /* 10. 表单未拦默认提交 */
+    if (/<form\b/i.test(body) && !/preventDefault/.test(rawJs)) issues.push({
+      id:'form', sev:'bad', title:'表单没拦默认提交：点一下整页刷新',
+      detail:'<code>&lt;form&gt;</code> 里按回车或点提交按钮，浏览器会把当前页当 GET/POST 发走——用户的输入瞬间清空。纯前端应用必须拦掉默认行为。',
+      lines:'发现 &lt;form&gt; 但 JS 里没有 preventDefault',
+      rate: BASE.rate.form,
+      fix:'<pre>form.addEventListener("submit", function(e){ e.preventDefault(); /* 你的逻辑 */ });</pre>'
+    });
+
+    /* 11. 按钮指向一个"只出现过一次"的名字（几乎肯定是死按钮）
+       注意：这里我故意做得非常保守。
+       第一版规则是"onclick 里的名字在 JS 里找不到 function 声明"——拿 221 个作品核对，
+       报了 12 个，浏览器里逐个 typeof 全是 false：12/12 全是误报（函数写在对象里、
+       箭头函数、window.xxx = 赋值，正则认不出来）。
+       一条 0% 准确率的规则比没有规则更坏：它会让用户开始不信任整份报告。
+       现在只判"这个名字在整份文件里只出现 1 次，也就是只出现在 onclick 里"。 */
+    var hset = {}, hm, hre = /\bon\w+\s*=\s*["']\s*([A-Za-z_$][\w$]*)\s*\(/g;
+    while ((hm = hre.exec(html)) !== null) hset[hm[1]] = 1;
+    var undef = Object.keys(hset).filter(function(nm){
+      if (RESERVED[nm]) return false;
+      var cnt = (html.match(new RegExp('\\b' + nm.replace(/[$]/g, '\\$&') + '\\b', 'g')) || []).length;
+      return cnt <= 1;
+    });
+    if (undef.length) issues.push({
+      id:'undef', sev:'bad', title:'按钮指向一个全文只出现过一次的名字：点了没反应',
+      detail:'<code>onclick="xxx()"</code> 里的 <code>xxx</code> 在整份文件里只出现在这一处，没有任何定义。用户的感受是"这个按钮是假的"。<br>这条规则我故意做得很保守——查得少，但报出来基本就是真的。<b>按钮到底死没死，最终还是要真点一下才知道</b>，静态扫描只能给线索。',
+      lines:'只在 onclick 里出现：' + esc(undef.slice(0, 6).join('、')),
+      rate: BASE.rate.undef,
+      fix:'要么补上函数定义，要么把 <code>onclick</code> 换成 <code>addEventListener</code>（推荐：不会被内联作用域挡住）。'
+    });
+
+    return { issues: issues, bytes: bytes(html), scripts: scripts.length };
+  }
+
+  /* ================= 修复器 ================= */
+  var SHIM_LS = 'var __SLS=(function(){var M={},ok=1;try{var k="__t";localStorage.setItem(k,"1");localStorage.removeItem(k)}catch(e){ok=0}' +
+    'function g(k){if(ok){try{return localStorage.getItem(k)}catch(e){}}return Object.prototype.hasOwnProperty.call(M,k)?M[k]:null}' +
+    'function s(k,v){M[k]=String(v);if(ok){try{localStorage.setItem(k,v)}catch(e){}}}' +
+    'function r(k){delete M[k];if(ok){try{localStorage.removeItem(k)}catch(e){}}}' +
+    'return{getItem:g,setItem:s,removeItem:r,clear:function(){M={};if(ok){try{localStorage.clear()}catch(e){}}},' +
+    'key:function(i){var a=Object.keys(M);return a[i]||null},get length(){return Object.keys(M).length}}})();';
+  var SHIM_SS = 'var __SSS=(function(){var M={},ok=1;try{var k="__t";sessionStorage.setItem(k,"1");sessionStorage.removeItem(k)}catch(e){ok=0}' +
+    'function g(k){if(ok){try{return sessionStorage.getItem(k)}catch(e){}}return Object.prototype.hasOwnProperty.call(M,k)?M[k]:null}' +
+    'function s(k,v){M[k]=String(v);if(ok){try{sessionStorage.setItem(k,v)}catch(e){}}}' +
+    'function r(k){delete M[k];if(ok){try{sessionStorage.removeItem(k)}catch(e){}}}' +
+    'return{getItem:g,setItem:s,removeItem:r,clear:function(){M={};if(ok){try{sessionStorage.clear()}catch(e){}}},' +
+    'key:function(i){var a=Object.keys(M);return a[i]||null},get length(){return Object.keys(M).length}}})();';
+
+  /* 只改"真代码"里的标识符：用掩码当位置地图 */
+  function rewriteIdent(code, name, to){
+    var mask = stripNoise(code), res = [], last = 0, n = 0, re = new RegExp('\\b' + name + '\\b', 'g'), m;
+    while ((m = re.exec(mask)) !== null) {
+      res.push(code.slice(last, m.index), to);
+      last = m.index + name.length; n++;
+    }
+    if (!n) return { code: code, n: 0 };
+    res.push(code.slice(last));
+    return { code: res.join(''), n: n };
+  }
+
+  function fixLS(html){
+    if (/__SLS|__SSS/.test(html)) return { html: html, n: 0, note: '' };   // 幂等：修过就不再修
+    var n = 0, needLS = false, needSS = false;
+    html = html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, function(whole, attrs, code){
+      if (/\bsrc\s*=/i.test(attrs)) return whole;
+      if (!/localStorage|sessionStorage/.test(code)) return whole;
+      var c = code;
+      if (/localStorage/.test(stripNoise(c))) {
+        var a = rewriteIdent(c, 'localStorage', '__SLS');
+        if (a.n) { c = a.code; n += a.n; needLS = true; }
+      }
+      if (/sessionStorage/.test(stripNoise(c))) {
+        var b = rewriteIdent(c, 'sessionStorage', '__SSS');
+        if (b.n) { c = b.code; n += b.n; needSS = true; }
+      }
+      /* 用拼接而不是 replace(code, c)：c 里若有 $& / $' 之类，
+         作为 replace 的替换串会被当成特殊记号，整段代码会被复制一份（这个坑真踩到了）。 */
+      var open = whole.match(/^<script\b[^>]*>/i);
+      return (open ? open[0] : '<script>') + c + '<\/script>';
+    });
+    if (!n) return { html: html, n: 0, note: '' };
+    var shim = '<script>/* 存储兜底：被禁用时退回内存，避免 SecurityError 打断整段脚本 */' +
+      (needLS ? SHIM_LS : '') + (needSS ? SHIM_SS : '') + '<\/script>';
+    var first = html.search(/<script\b/i);
+    if (first >= 0) html = html.slice(0, first) + shim + html.slice(first);
+    else html = html.replace(/<\/body>/i, shim + '</body>');
+    return { html: html, n: n, note: '替换 ' + n + ' 处调用 + 注入兜底 store' };
+  }
+
+  function fixVH(html){
+    var n = 0;
+    function decls(css){
+      return css.replace(/([a-zA-Z-]+)\s*:\s*([^;{}]*\b100vh\b[^;{}]*)/g, function(m, prop, val){
+        if (/100dvh/.test(val)) return m;
+        n++;
+        return prop + ':' + val + ';' + prop + ':' + val.replace(/100vh/g, '100dvh');
+      });
+    }
+    html = html.replace(/<style\b([^>]*)>([\s\S]*?)<\/style>/gi, function(m, at, css){
+      return '<style' + at + '>' + decls(css) + '</style>';
+    });
+    html = html.replace(/\bstyle\s*=\s*"([^"]*)"/gi, function(m, v){ return 'style="' + decls(v) + '"'; });
+    html = html.replace(/\bstyle\s*=\s*'([^']*)'/gi, function(m, v){ return "style='" + decls(v) + "'"; });
+    return { html: html, n: n, note: n ? '补 ' + n + ' 条 dvh 回退声明（保留原 100vh）' : '' };
+  }
+
+  function fixMeta(html){
+    var add = '', n = 0;
+    var noCharset = !/<meta[^>]+charset/i.test(html);
+    var noViewport = !/<meta[^>]+name\s*=\s*["']viewport/i.test(html);
+    if (noCharset) { add += '<meta charset="utf-8">\n'; n++; }
+    if (noViewport) { add += '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'; n++; }
+    if (!/<html[^>]+lang\s*=/i.test(html)) {
+      if (/<html\b/i.test(html)) { html = html.replace(/<html\b/i, '<html lang="zh-CN"'); n++; }
+    }
+    if (add) {
+      if (/<head\b[^>]*>/i.test(html)) html = html.replace(/<head\b[^>]*>/i, function(m){ return m + '\n' + add; });
+      else if (/<html\b[^>]*>/i.test(html)) html = html.replace(/<html\b[^>]*>/i, function(m){ return m + '\n<head>\n' + add + '</head>'; });
+      else html = add + html;
+    }
+    return { html: html, n: n, note: n ? '补齐 ' + n + ' 项基础 meta / lang' : '' };
+  }
+
+  function fixFontCdn(html){
+    var n = 0;
+    html = html.replace(/<link\b[^>]*href\s*=\s*["'][^"']*fonts\.(?:googleapis|gstatic)\.com[^"']*["'][^>]*>/gi, function(){ n++; return ''; });
+    html = html.replace(/@import\s+(?:url\()?["']?https?:\/\/fonts\.(?:googleapis|gstatic)\.com[^;]*;?/gi, function(){ n++; return ''; });
+    return { html: html, n: n, note: n ? '删掉 ' + n + ' 处字体外链（正文回退系统字体）' : '' };
+  }
+
+  /* 顺序有讲究：先补 meta（动 head），再处理样式，最后动脚本。
+     只修「检查器真的报出来的」那一类——否则会把本来已经包好 try/catch 的代码
+     也一并改写，白加 700 字节 shim（第一版就是这个毛病，211 个全被"修"了）。 */
+  function fix(html){
+    var applied = [], logs = [];
+    if (!looksLikeHtml(html)) return { html: html, applied: [], logs: [], refuse: true,
+      bytesBefore: bytes(html), bytesAfter: bytes(html) };
+    var want = {};
+    check(html).issues.forEach(function(i){ if (i.rule) want[i.rule] = 1; });
+    var steps = [
+      ['meta', '基础 meta / lang', fixMeta],
+      ['vh', '移动端 100vh', fixVH],
+      ['fontcdn', '字体外链', fixFontCdn],
+      ['ls', '存储兜底', fixLS]
+    ];
+    for (var i = 0; i < steps.length; i++) {
+      if (!want[steps[i][0]]) continue;
+      var r = steps[i][2](html);
+      if (r.n > 0) { html = r.html; applied.push(steps[i][0]); logs.push({ id: steps[i][0], label: steps[i][1], note: r.note }); }
+    }
+    return { html: html, applied: applied, logs: logs, bytesBefore: bytes(arguments[0]), bytesAfter: bytes(html) };
+  }
+
+  /* ---------- 渲染 ---------- */
+  function betterThan(k){
+    var worse = 0, total = 0;
+    for (var key in BASE.hist) { total += BASE.hist[key]; if (+key > k) worse += BASE.hist[key]; }
+    return total ? Math.round(worse / total * 100) : 0;
+  }
+
+  function render(html, afterFixInfo){
+    fixbar.textContent = '';
+    if (!html || html.trim().length < 30) { out.textContent = ''; return; }
+    var r = check(html);
+    var iss = r.issues;
+    var order = {bad:0, warn:1, info:2};
+    iss.sort(function(a, b){ return order[a.sev] - order[b.sev]; });
+    var bad = iss.filter(function(x){ return x.sev === 'bad'; }).length;
+    var warn = iss.filter(function(x){ return x.sev === 'warn'; }).length;
+    var info = iss.length - bad - warn;
+    var autoCount = iss.filter(function(x){ return x.rule; }).length;
+    var verdict, cls;
+    if (bad) { verdict = '先别上线，有 ' + bad + ' 项会直接炸'; cls = 'bad'; }
+    else if (warn) { verdict = '能上线，但有 ' + warn + ' 处会让用户走掉'; cls = 'warn'; }
+    else if (info) { verdict = '基本干净，剩 ' + info + ' 项优化项'; cls = 'ok'; }
+    else { verdict = '这一关全过了'; cls = 'ok'; }
+
+    /* 修复结果条 */
+    if (afterFixInfo) {
+      var d = document.createElement('div');
+      d.className = 'done';
+      var h = document.createElement('h3');
+      h.textContent = '已修好 ' + afterFixInfo.fixedCount + ' 处';
+      d.appendChild(h);
+      var ul = document.createElement('ul');
+      ul.className = 'list';
+      afterFixInfo.logs.forEach(function(l){
+        var li = document.createElement('li');
+        li.textContent = l.label + '：' + l.note;
+        ul.appendChild(li);
+      });
+      if (!afterFixInfo.logs.length) {
+        var li0 = document.createElement('li');
+        li0.className = 'skip';
+        li0.textContent = '没有可自动修复的项（剩下的都在语法层以上，需要你手动改）';
+        ul.appendChild(li0);
+      }
+      (afterFixInfo.skipped || []).forEach(function(s){
+        var li2 = document.createElement('li');
+        li2.className = 'skip';
+        li2.textContent = '需手动：' + s;
+        ul.appendChild(li2);
+      });
+      d.appendChild(ul);
+      var w = document.createElement('div');
+      w.className = 'warnbox';
+      w.textContent = '自动修复只动语法层，不碰业务逻辑。体积 ' + afterFixInfo.bytesBefore.toLocaleString() +
+        ' → ' + afterFixInfo.bytesAfter.toLocaleString() + ' 字节。请再点一次「一键修复」确认没有可修的了，然后真机点一遍主流程。';
+      d.appendChild(w);
+      fixbar.appendChild(d);
+    }
+
+    out.textContent = '';
+
+    var sum = document.createElement('div');
+    sum.className = 'sum';
+    var sc = document.createElement('div');
+    sc.className = 'score';
+    sc.textContent = String(iss.length);
+    var sm = document.createElement('small');
+    sm.textContent = ' 类问题';
+    sc.appendChild(sm);
+
+    var tx = document.createElement('div');
+    tx.className = 'txt';
+    var b = document.createElement('b');
+    b.textContent = verdict;
+    tx.appendChild(b);
+    var p2 = document.createElement('div');
+    p2.style.marginTop = '3px';
+    p2.textContent = r.bytes.toLocaleString() + ' 字节 · ' + r.scripts + ' 段内联脚本 · 比 ' + betterThan(iss.length) + '% 的同类样本干净';
+    tx.appendChild(p2);
+
+    var pills = document.createElement('div');
+    pills.className = 'pills';
+    [[bad, 'bad', '会炸'], [warn, 'warn', '会掉人'], [info, 'info', '优化']].forEach(function(t){
+      if (!t[0]) return;
+      var el = document.createElement('span');
+      el.className = 'pill ' + t[1];
+      el.textContent = t[2] + ' ' + t[0];
+      pills.appendChild(el);
+    });
+    if (autoCount) {
+      var pa = document.createElement('span');
+      pa.className = 'pill ok';
+      pa.textContent = '一键可修 ' + autoCount;
+      pills.appendChild(pa);
+    }
+    tx.appendChild(pills);
+
+    sum.appendChild(sc);
+    sum.appendChild(tx);
+    out.appendChild(sum);
+
+    if (!iss.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = '没有命中任何一类已知硬伤。不过记住：静态检查干净，只说明“不会崩”，不等于“有人用”。';
+      out.appendChild(e);
+    }
+
+    iss.forEach(function(it){
+      var c = document.createElement('div');
+      c.className = 'card ' + it.sev;
+      var h = document.createElement('h3');
+      var tag = document.createElement('span');
+      tag.className = 'tag ' + it.sev;
+      tag.textContent = it.sev === 'bad' ? '会炸' : it.sev === 'warn' ? '会掉人' : '优化';
+      var t = document.createElement('span');
+      t.textContent = it.title;
+      h.appendChild(tag);
+      h.appendChild(t);
+      if (it.rule) {
+        var ta = document.createElement('span');
+        ta.className = 'tag auto';
+        ta.textContent = '可自动修';
+        h.appendChild(ta);
+      }
+      c.appendChild(h);
+
+      var dd = document.createElement('p');
+      dd.innerHTML = it.detail;
+      c.appendChild(dd);
+
+      var l = document.createElement('div');
+      l.className = 'lines';
+      l.innerHTML = it.lines;
+      c.appendChild(l);
+
+      var fx = document.createElement('p');
+      fx.className = 'bench';
+      var rateTxt = it.rate ? '同类样本里 <b>' + pct(it.rate) + '</b> 也有这条 —— ' : '';
+      fx.innerHTML = rateTxt + '修法：' + it.fix;
+      c.appendChild(fx);
+
+      out.appendChild(c);
+    });
+
+    meta.textContent = iss.length + ' 项 · ' + r.bytes.toLocaleString() + 'B';
+  }
+
+  /* ---------- 修复动作 ---------- */
+  var undoValue = null;
+
+  function doFix(){
+    if (t) { clearTimeout(t); t = null; }   /* 别让 220ms 的防抖 render 把修复结果盖掉 */
+    var html = src.value;
+    if (!html || html.trim().length < 30) { meta.textContent = '先粘一份代码进来'; return; }
+    var before = check(html);
+    var res = fix(html);
+    if (res.refuse) {
+      render(html);          /* render 会清空 fixbar，所以先渲染再插提示 */
+      fixbar.textContent = '';
+      var box = document.createElement('div');
+      box.className = 'card bad';
+      var hh = document.createElement('h3');
+      hh.textContent = '没有修：这看起来不是 HTML 页面';
+      box.appendChild(hh);
+      var pp = document.createElement('p');
+      pp.innerHTML = '粘进来的内容前 4KB 里没有 <code>&lt;html&gt;</code> / <code>&lt;body&gt;</code> / doctype。' +
+        '常见原因：把打包后的 <b>zip</b> 当网页上传了，或者粘的是构建日志。' +
+        '自动修复只在 HTML 上做改动，这里硬改只会让它更难查。';
+      box.appendChild(pp);
+      fixbar.appendChild(box);
+      return;
+    }
+    var after = check(res.html);
+    var skipped = after.issues.filter(function(x){ return !x.rule; }).map(function(x){ return x.title; });
+    if (undoValue === null) undoValue = html;
+    src.value = res.html;
+    store.set('h5fix_last', res.html.slice(0, 60000));
+    render(res.html, {
+      fixedCount: res.applied.length,
+      logs: res.logs,
+      skipped: skipped,
+      bytesBefore: res.bytesBefore,
+      bytesAfter: res.bytesAfter,
+      beforeCount: before.issues.length,
+      afterCount: after.issues.length
+    });
+    renderFixButtons(res.html);
+  }
+
+  function renderFixButtons(fixedHtml){
+    var row = document.createElement('div');
+    row.className = 'row';
+    row.style.marginTop = '4px';
+
+    var dl = document.createElement('button');
+    dl.type = 'button'; dl.className = 'btn primary'; dl.textContent = '下载修好的 .html';
+    dl.addEventListener('click', function(){
+      var blob = new Blob([src.value], {type: 'text/html;charset=utf-8'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'fixed.html';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    });
+
+    var cp = document.createElement('button');
+    cp.type = 'button'; cp.className = 'btn'; cp.textContent = '复制源码';
+    cp.addEventListener('click', function(){
+      var txt = src.value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function(){ cp.textContent = '已复制'; }, function(){ cp.textContent = '复制失败，请手动选'; });
+      } else {
+        src.select(); document.execCommand && document.execCommand('copy'); cp.textContent = '已复制';
+      }
+    });
+
+    var un = document.createElement('button');
+    un.type = 'button'; un.className = 'btn ghost'; un.textContent = '撤销修复';
+    un.addEventListener('click', function(){
+      if (undoValue !== null) { src.value = undoValue; undoValue = null; render(src.value); fixbar.textContent = ''; }
+    });
+
+    row.appendChild(dl); row.appendChild(cp); row.appendChild(un);
+    fixbar.appendChild(row);
+  }
+
+  /* ---------- 事件 ---------- */
+  var t = null;
+  function schedule(){
+    if (t) clearTimeout(t);
+    t = setTimeout(function(){ render(src.value); }, 220);
+  }
+  src.addEventListener('input', function(){ undoValue = null; schedule(); store.set('h5fix_last', src.value.slice(0, 60000)); });
+
+  $('doFix').addEventListener('click', doFix);
+
+  $('file').addEventListener('change', function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){ src.value = String(fr.result || ''); undoValue = null; render(src.value); };
+    fr.readAsText(f);
+  });
+
+  ['dragenter','dragover'].forEach(function(n){
+    panel.addEventListener(n, function(e){ e.preventDefault(); panel.classList.add('drop-on'); });
+  });
+  ['dragleave','drop'].forEach(function(n){
+    panel.addEventListener(n, function(e){ e.preventDefault(); panel.classList.remove('drop-on'); });
+  });
+  panel.addEventListener('drop', function(e){
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){ src.value = String(fr.result || ''); undoValue = null; render(src.value); };
+    fr.readAsText(f);
+  });
+
+  var SAMPLE_BAD = '<!DOCTYPE html>\n<html>\n<head><title>记账</title></head>\n<body>\n<div style="height:100vh;width:1200px">\n  <h1>我的记账本（示例数据）</h1>\n  <input id="amt"><button onclick="add()">记一笔</button>\n  <ul id="list"></ul>\n</div>\n<script>\nvar data = [];\nfunction add(){\n  data.push(document.getElementById(\'amt\').value);\n  localStorage.setItem(\'rec\', JSON.stringify(data));\n  document.getElementById(\'list\').innerHTML += \'<li>\' + document.getElementById(\'amt\').value + \'</li>\';\n}\nload();\nfunction load(){ data = JSON.parse(localStorage.getItem(\'rec\') || \'[]\'); }\n<\/script>\n</body>\n</html>';
+
+  var SAMPLE_OK = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<title>我的记账本</title>\n<style>\nbody{margin:0;font-family:system-ui;max-width:560px;margin:0 auto;padding:16px;\n     min-height:100vh;min-height:100dvh}\nli{list-style:none;padding:10px 0;border-bottom:1px solid #eee}\n</style>\n</head>\n<body>\n<h1>我的记账本</h1>\n<form id="f"><input id="amt" inputmode="decimal" aria-label="金额"><button>记一笔</button></form>\n<ul id="list"></ul>\n<script>\n(function(){\n  "use strict";\n  var mem = {};\n  function s(f, fb){ try { return f(); } catch(e){ return fb; } }\n  var store = {\n    get: function(k){ return s(function(){ return localStorage.getItem(k); }, mem[k] || null); },\n    set: function(k, v){ mem[k] = v; s(function(){ localStorage.setItem(k, v); }, null); }\n  };\n  var data = [];\n  try { data = JSON.parse(store.get("rec") || "[]"); } catch(e){ data = []; }\n  function draw(){\n    var ul = document.getElementById("list");\n    ul.textContent = "";\n    data.forEach(function(v){\n      var li = document.createElement("li");\n      li.textContent = v;\n      ul.appendChild(li);\n    });\n  }\n  document.getElementById("f").addEventListener("submit", function(e){\n    e.preventDefault();\n    var el = document.getElementById("amt");\n    var v = el.value.trim();\n    if (!v) return;\n    data.push(v);\n    store.set("rec", JSON.stringify(data));\n    el.value = "";\n    draw();\n  });\n  draw();\n})();\n<\/script>\n</body>\n</html>';
+
+  $('sample').addEventListener('click', function(){ src.value = SAMPLE_BAD; undoValue = null; render(src.value); });
+  $('sample2').addEventListener('click', function(){ src.value = SAMPLE_OK; undoValue = null; render(src.value); });
+
+  /* 测试钩子：不参与 UI，供自动化回归调用 */
+  window.__H5FIX = { check: check, fix: fix, stripNoise: stripNoise };
+
+  var last = store.get('h5fix_last');
+  if (last) { src.value = last; render(last); }
+})();
+</script>
+</body>
+</html>

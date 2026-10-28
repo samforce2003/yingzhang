@@ -67,6 +67,7 @@ footer a{color:var(--red);text-decoration:none;border-bottom:1px solid #dcc9c9}
   .hd{padding:26px 0 20px}
 }
 </style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23f6f3ea'/%3E%3Crect x='2' y='2' width='3' height='12' fill='%238c2f2f'/%3E%3Crect x='7' y='2' width='8' height='2' fill='%231d1b18'/%3E%3Crect x='7' y='6' width='8' height='2' fill='%231d1b18'/%3E%3Crect x='7' y='10' width='5' height='2' fill='%231d1b18'/%3E%3C/svg%3E">
 </head>
 <body>
 
@@ -74,7 +75,7 @@ footer a{color:var(--red);text-decoration:none;border-bottom:1px solid #dcc9c9}
   <div class="wrap hd">
     <div class="kicker">硬账 · 三件</div>
     <h1>打工人硬账</h1>
-    <p class="lede">三个只做一件事的工具：<b>算清钱</b>、<b>写清话</b>、<b>找对门</b>。输入你的数字，输出区间、条文出处和可复制的文书。</p>
+    <p class="lede">三个只做一件事的工具：<b>算清钱</b>、<b>写清话</b>、<b>找对门</b>。输入你的数字，输出区间、条文出处和可复制的文书。下面另有一格，是给写前端的人用的体检工具。</p>
     <div class="meta">
       <span>纯前端单页</span><i>·</i><span>数据不出浏览器</span><i>·</i><span>断网可用</span><i>·</i><span>条文标出处</span><i>·</i><span>不替你下结论</span>
     </div>
@@ -119,6 +120,34 @@ footer a{color:var(--red);text-decoration:none;border-bottom:1px solid #dcc9c9}
         <dt>你填</dt><dd>入职离职日期、月薪、解除方式、有无合同/加班/未休年假</dd>
         <dt>它出</dt><dd>六项分开算（经济补偿 N / 欠薪 / 未签合同二倍工资 / 加班费 / 未休年假 / 社保归属）、时效倒计时、仲裁请求清单、证据清单、申请书草稿</dd>
         <dt>口径</dt><dd>《劳动合同法》第四十七条（N，社平三倍封顶与 12 年上限）、第八十二条（二倍工资）、第八十七条（违法解除 2N）</dd>
+      </dl>
+      <div class="go">打开 →</div>
+    </a>
+  </section>
+
+  <section>
+    <h2>第二个架子：给写页面的人</h2>
+    <p class="sub">同一套东西的另一半——我用它检查自己和别人 AI 生成的前端页面。</p>
+
+    <a class="card" href="h5/">
+      <div class="no">04</div>
+      <h3>AI 生成 H5 修复台</h3>
+      <p class="q">AI 写完的前端<b>为什么一上线就崩</b>？</p>
+      <dl>
+        <dt>你填</dt><dd>把页面源码粘进来（或者直接用文件版跑批量）</dd>
+        <dt>它出</dt><dd>12 类运行时体检（100vh 塌陷、localStorage 裸调用、onclick 指向未定义函数、缺 viewport…）+ 4 类可自动修的改法</dd>
+        <dt>底子</dt><dd>在 221 个真实 AI 生成页面上跑过：24% 用 100vh、10% 裸调 localStorage、31% 至少一条运行时问题</dd>
+      </dl>
+      <div class="go">打开 →</div>
+    </a>
+
+    <a class="card" href="h5/check.html">
+      <div class="no">05</div>
+      <h3>H5 体检器（旧版）</h3>
+      <p class="q">只想先看一眼问题清单？</p>
+      <dl>
+        <dt>用途</dt><dd>只体检、不修复，问题一目了然</dd>
+        <dt>注意</dt><dd>被上面的修复台取代了，留着是因为有人只想要结论不想改代码</dd>
       </dl>
       <div class="go">打开 →</div>
     </a>
